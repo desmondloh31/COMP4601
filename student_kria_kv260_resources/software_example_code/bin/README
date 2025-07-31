@@ -1,0 +1,9 @@
+# Prebuilt binaries
+
+- sample256: Transfer 10 frames of 256 consecutive samples and print to the screen
+	- AXI DMA Base Address -> 0xA0000000
+	- Custom module control bus -> 0xA0010000
+- ctrl_bus_test: Reads the initial state of the registers, writes 0xdeadbeef to all register, reads again
+	- Custom module control bus -> 0xA0010000
+
+> The *.old version of the binary swaps teh AXI DMA Base address and control bus base address.
