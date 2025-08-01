@@ -396,24 +396,26 @@ begin
 	-- Implement memory mapped register select and read logic generation
 	-- Slave register read enable is asserted when valid address is available
 	-- and the slave is ready to accept the read address.
-	slv_reg_rden <= axi_arready and S_AXI_ARVALID and (not axi_rvalid) ;
+	slv_reg_rden <= axi_arready and S_AXI_ARVALID and (not axi_rvalid);
 
-	process (LED_output_reg, button_input_reg, axi_araddr, S_AXI_ARESETN, slv_reg_rden)
-	    variable loc_addr :std_logic_vector(OPT_MEM_ADDR_BITS downto 0);
+	process (ctrl_reg, status_reg, valid_nonce_reg, axi_araddr, S_AXI_ARESETN, slv_reg_rden)
+		variable loc_addr : std_logic_vector(OPT_MEM_ADDR_BITS downto 0);
 	begin
-	    -- Address decoding for reading registers
-	    loc_addr := axi_araddr(ADDR_LSB + OPT_MEM_ADDR_BITS downto ADDR_LSB);
-	    case loc_addr is
-            when "00" =>
-                -- Reading from (ADDR)  
-                reg_data_out  <= LED_output_reg;
-            when "01" =>
-                -- Reading from (ADDR + 4) 
-                reg_data_out  <= button_input_reg;
-            when others =>
-                reg_data_out  <= (others => '0');
-	    end case;
-	end process; 
+		-- Address decoding for reading registers
+		loc_addr := axi_araddr(ADDR_LSB + OPT_MEM_ADDR_BITS downto ADDR_LSB);
+		case loc_addr is
+			when "000" =>  -- 0x00: Control register (start, reset)
+				reg_data_out <= ctrl_reg;
+			when "001" =>  -- 0x04: Status register (ready, done, etc.)
+				reg_data_out <= status_reg;
+			when "010" =>  -- 0x08: Valid nonce output register
+				reg_data_out <= valid_nonce_reg;
+			-- Add more cases below if needed, e.g., nonce_start_reg, header_0, etc.
+			when others =>
+				reg_data_out <= (others => '0');
+		end case;
+	end process;
+
 
 	-- This block loads the read data into the AXI output channel to be received by the PS
 	-- Output register or memory read data
