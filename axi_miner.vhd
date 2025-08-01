@@ -253,6 +253,8 @@ begin
 	-- and the slave is ready to accept the write address and write data.
 	slv_reg_wren <= axi_wready and S_AXI_WVALID and axi_awready and S_AXI_AWVALID;
 
+	-- memory maps - data from PS (AXI controller in PL)
+	-- TODO debug
 	process (S_AXI_ACLK)
 	variable loc_addr :std_logic_vector(OPT_MEM_ADDR_BITS downto 0); 
 	begin
@@ -396,6 +398,8 @@ begin
 	-- Implement memory mapped register select and read logic generation
 	-- Slave register read enable is asserted when valid address is available
 	-- and the slave is ready to accept the read address.
+
+	-- TODO debug
 	slv_reg_rden <= axi_arready and S_AXI_ARVALID and (not axi_rvalid);
 
 	process (ctrl_reg, status_reg, valid_nonce_reg, axi_araddr, S_AXI_ARESETN, slv_reg_rden)
