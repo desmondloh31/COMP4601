@@ -2,22 +2,20 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity axi_gpio is
+entity axi_miner is
 	generic (
         ------------------------------------------------
         -- AXI Lite parameters
         ------------------------------------------------
-		-- Width of S_AXI data bus
 		C_S_AXI_DATA_WIDTH	: integer	:= 32;
-		-- Width of S_AXI address bus
 		C_S_AXI_ADDR_WIDTH	: integer	:= 5
 	);
 	port (
         ------------------------------------------------
         -- I/O signals (PUT YOUR I/O HERE)
         ------------------------------------------------
-    	BUTTON : in std_logic;
-    	LED   : out std_logic;
+    	ps_clk	: in std_logic; -- keccak hashing core clock
+
     	
 
         
@@ -85,9 +83,9 @@ entity axi_gpio is
     		-- accept the read data and response information.
 		S_AXI_RREADY	: in std_logic
 	);
-end axi_gpio;
+end axi_miner;
 
-architecture arch_imp of axi_gpio is
+architecture arch_imp of axi_miner is
     ------------------------------------------------
 	-- AXI4LITE signals
     ------------------------------------------------
@@ -125,9 +123,14 @@ architecture arch_imp of axi_gpio is
 	------------------------------------------------
 	-- Signals for user logic register space example (PUT YOUR REGISTERS HERE)
 	------------------------------------------------
-    signal LED_output_reg : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-    signal button_input_reg : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-    signal button_sync_reg : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal ctrl_reg        : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal status_reg      : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal header_0_reg    : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal header_1_reg    : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal nonce_start_reg : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal nonce_end_reg   : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal valid_nonce_reg : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+
 	
 	
 	
@@ -149,23 +152,23 @@ begin
     
     
     ------------------------------------------------
-	-- I/O Handling (PUT YOUR I/O HANDLING CODE HERE)
+	-- FSM to control keccak core 					FSM NEEDS TO GO IN THIS BLOCK
     ------------------------------------------------
     -- Assign bit 0 of led output register to the led output 
-    LED <= LED_output_reg(0);
-    process (S_AXI_ACLK)
-	begin
-        if rising_edge(S_AXI_ACLK) then 
+    -- LED <= LED_output_reg(0);
+    -- process (S_AXI_ACLK)
+	-- begin
+    --     if rising_edge(S_AXI_ACLK) then 
         
-            -- Set all bits to 0 and then capture the button input to the 
-            -- bottom bit of sync register 
-            button_sync_reg <= (others => '0');
-            button_sync_reg(0) <= BUTTON;
+    --         -- Set all bits to 0 and then capture the button input to the 
+    --         -- bottom bit of sync register 
+    --         button_sync_reg <= (others => '0');
+    --         button_sync_reg(0) <= BUTTON;
             
-            -- Set the button input register as the output of button sync register
-            button_input_reg <= button_sync_reg;
-        end if;
-    end process;
+    --         -- Set the button input register as the output of button sync register
+    --         button_input_reg <= button_sync_reg;
+    --     end if;
+    -- end process;
     
     
     ------------------------------------------------
@@ -248,39 +251,71 @@ begin
 	-- These registers are cleared when reset (active low) is applied.
 	-- Slave register write enable is asserted when valid address and data are available
 	-- and the slave is ready to accept the write address and write data.
-	slv_reg_wren <= axi_wready and S_AXI_WVALID and axi_awready and S_AXI_AWVALID ;
+	slv_reg_wren <= axi_wready and S_AXI_WVALID and axi_awready and S_AXI_AWVALID;
 
 	process (S_AXI_ACLK)
 	variable loc_addr :std_logic_vector(OPT_MEM_ADDR_BITS downto 0); 
 	begin
-        if rising_edge(S_AXI_ACLK) then 
-            if S_AXI_ARESETN = '0' then
-                LED_output_reg <= (others => '0');            
-            else
-                loc_addr := axi_awaddr(ADDR_LSB + OPT_MEM_ADDR_BITS downto ADDR_LSB);
-                if (slv_reg_wren = '1') then
-                    case loc_addr is
-                    when "00" =>
-                        ---- 4 bytes at (ADDR)
-                        for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
-                            if ( S_AXI_WSTRB(byte_index) = '1' ) then
-                                -- Respective byte enables are asserted as per write strobes     
-                                --slv_output_reg(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
-                                LED_output_reg(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
-                            end if;
-                        end loop;
-                    when "01" =>
-                        ---- 4 bytes at (ADDR + 4)
-                        LED_output_reg <= LED_output_reg;
-                    when others =>
-                        --slv_output_reg <= slv_output_reg;
-                        LED_OUTPUT_reg <= LED_output_reg;
-                    end case;
-                end if;
-            end if;
-        end if;                   
-	end process; 
+		if rising_edge(S_AXI_ACLK) then 
+			if S_AXI_ARESETN = '0' then
+				ctrl_reg        <= (others => '0');
+				header_0_reg    <= (others => '0');
+				header_1_reg    <= (others => '0');
+				nonce_start_reg <= (others => '0');
+				nonce_end_reg   <= (others => '0');
+				valid_nonce_reg <= (others => '0');
+				status_reg      <= (others => '0');
+			else
+				loc_addr := axi_awaddr(ADDR_LSB + OPT_MEM_ADDR_BITS downto ADDR_LSB);
+				if (slv_reg_wren = '1') then
+					case loc_addr is
+						when "00" => -- ctrl_reg
+							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+								if (S_AXI_WSTRB(byte_index) = '1') then
+									ctrl_reg(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
+								end if;
+							end loop;
+						when "01" => -- header_0_reg
+							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+								if (S_AXI_WSTRB(byte_index) = '1') then
+									header_0_reg(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
+								end if;
+							end loop;
+						when "10" => -- header_1_reg
+							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+								if (S_AXI_WSTRB(byte_index) = '1') then
+									header_1_reg(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
+								end if;
+							end loop;
+						when "11" => -- nonce_start_reg
+							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+								if (S_AXI_WSTRB(byte_index) = '1') then
+									nonce_start_reg(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
+								end if;
+							end loop;
+						when "100" => -- nonce_end_reg
+							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+								if (S_AXI_WSTRB(byte_index) = '1') then
+									nonce_end_reg(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
+								end if;
+							end loop;
+						when "101" => -- valid_nonce_reg (optional write)
+							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+								if (S_AXI_WSTRB(byte_index) = '1') then
+									valid_nonce_reg(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
+								end if;
+							end loop;
+						when others =>
+							null; -- ignore
+					end case;
+				end if;
+			end if;
+		end if;                   
+	end process;
 
+	---------------------- STARTING WRITE RESPONSE START FROM AXI SLAVE TO MASTER (PS)
+
+	-- This block acknowledges a successful write from master (PS) to AXI Slave
 	-- Implement write response logic generation
 	-- The write response and response valid signals are asserted by the slave 
 	-- when axi_wready, S_AXI_WVALID, axi_wready and S_AXI_WVALID are asserted.  
@@ -302,7 +337,8 @@ begin
             end if;
         end if;                   
 	end process; 
-
+	
+	-- This block handles AR read (Master tells slave which address to read from)
 	-- Implement axi_arready generation
 	-- axi_arready is asserted for one S_AXI_ACLK clock cycle when
 	-- S_AXI_ARVALID is asserted. axi_awready is 
@@ -328,6 +364,7 @@ begin
         end if;                   
 	end process; 
 
+	-- This block generates valid read data, making it ready to be consumed by the master (PS)
 	-- Implement axi_arvalid generation
 	-- axi_rvalid is asserted for one S_AXI_ACLK clock cycle when both 
 	-- S_AXI_ARVALID and axi_arready are asserted. The slave registers 
@@ -354,7 +391,8 @@ begin
             end if;
         end if;
 	end process;
-
+	
+	-- This block will read correct register values when requested by PS (master)
 	-- Implement memory mapped register select and read logic generation
 	-- Slave register read enable is asserted when valid address is available
 	-- and the slave is ready to accept the read address.
@@ -377,6 +415,7 @@ begin
 	    end case;
 	end process; 
 
+	-- This block loads the read data into the AXI output channel to be received by the PS
 	-- Output register or memory read data
 	process( S_AXI_ACLK ) is
 	begin
