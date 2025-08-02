@@ -87,6 +87,34 @@ entity axi_miner is
 end axi_miner;
 
 architecture arch_imp of axi_miner is
+
+	-- Hashing Core 
+	component keccak
+		generic ( N : integer := 64 );
+		port (
+			clk     : in  std_logic;
+			rst_n   : in  std_logic;
+			init    : in  std_logic;
+			go      : in  std_logic;
+			absorb  : in  std_logic;
+			squeeze : in  std_logic;
+			din     : in  std_logic_vector(N-1 downto 0);
+			ready   : out std_logic;
+			dout    : out std_logic_vector(N-1 downto 0)
+		);
+	end component;
+
+	-- Comparator 
+	component comparator
+		generic (
+		WIDTH : integer := 64
+		);
+		port (
+		hash_val    : in  std_logic_vector(WIDTH-1 downto 0);
+		target_val  : in  std_logic_vector(WIDTH-1 downto 0);
+		match_found : out std_logic
+		);
+	end component;
     ------------------------------------------------
 	-- AXI4LITE signals
     ------------------------------------------------
@@ -114,15 +142,13 @@ architecture arch_imp of axi_miner is
 	-- AXI handshake and processing intermediate signals
 	signal byte_index	: integer;
 	signal aw_en	: std_logic;
-
     signal slv_reg_rden	: std_logic;
     signal slv_reg_wren	: std_logic;
-
-    
 	signal reg_data_out	:std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 	
-	------------------------------------------------
+	-----------------------------------------------------------------------------
 	-- Signals for user logic register space example (PUT YOUR REGISTERS HERE)
+
 	------------------------------------------------
 	signal ctrl_reg        : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 	signal status_reg      : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
@@ -192,11 +218,26 @@ begin
 	S_AXI_RDATA	    <= axi_rdata;
 	S_AXI_RRESP	    <= axi_rresp;
 	S_AXI_RVALID	<= axi_rvalid;
+
+	-- Instantiate Keccak core
+	keccak_inst : keccak
+		generic map ( N => 64 )
+		port map (
+			clk     => ps_clk,
+			rst_n   => rst_n,
+			init    => keccak_init,
+			go      => keccak_go,
+			absorb  => keccak_absorb,
+			squeeze => keccak_squeeze,
+			din     => header_0_reg & header_1_reg(31 downto 0),
+			ready   => keccak_ready,
+			dout    => keccak_dout
+		);
     
     
-    ------------------------------------------------
-	-- FSM to control keccak core 					FSM NEEDS TO GO IN THIS BLOCK
-    ------------------------------------------------
+    ---------------------------------------------------------
+	-- FSM LOGIC TO CONTROL KECCAK HASHING CORE FOR MINING 
+    ---------------------------------------------------------
     -- Assign bit 0 of led output register to the led output 
     -- LED <= LED_output_reg(0);
     -- process (S_AXI_ACLK)
@@ -214,11 +255,11 @@ begin
     -- end process;
     
     
-    ------------------------------------------------
-	-- AXI reading/writing
-    ------------------------------------------------
+    ------------------------------------------------------------------------------------------------
+	-- STARTING THE WRITE RESPONSE FROM PS (Master) -> AXI Slave
+    ------------------------------------------------------------------------------------------------
     
-
+	
 	-- Implement axi_awready generation
 	-- axi_awready is asserted for one S_AXI_ACLK clock cycle when both
 	-- S_AXI_AWVALID and S_AXI_WVALID are asserted. axi_awready is
@@ -358,8 +399,6 @@ begin
 		end if;                   
 	end process;
 
-	---------------------- STARTING WRITE RESPONSE START FROM AXI SLAVE TO MASTER (PS)
-
 	-- This block acknowledges a successful write from master (PS) to AXI Slave
 	-- Implement write response logic generation
 	-- The write response and response valid signals are asserted by the slave 
@@ -383,7 +422,12 @@ begin
         end if;                   
 	end process; 
 	
-	-- This block handles AR read (Master tells slave which address to read from)
+    
+    -----------------------------------------------------------------------------------------
+	-- STARTING THE READ RESPONSE FROM AXI Slave -> PS Master
+    -----------------------------------------------------------------------------------------
+
+	-- This checks if there's a valid red request from PS and latches the read address
 	-- Implement axi_arready generation
 	-- axi_arready is asserted for one S_AXI_ACLK clock cycle when
 	-- S_AXI_ARVALID is asserted. axi_awready is 
@@ -398,7 +442,7 @@ begin
                 axi_araddr  <= (others => '1');
             else
                 if (axi_arready = '0' and S_AXI_ARVALID = '1') then
-                    -- indicates that the slave has acceped the valid read address
+                    -- indicates that the slave has accepted the valid read address
                     axi_arready <= '1';
                     -- Read Address latching 
                     axi_araddr  <= S_AXI_ARADDR;           
