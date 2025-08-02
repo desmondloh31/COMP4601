@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.keccak_globals.all;
 
 entity axi_miner is
 	generic (
@@ -147,20 +148,64 @@ architecture arch_imp of axi_miner is
 	
 	-----------------------------------------------------------------------------
 	-- Signals for user logic register space example (PUT YOUR REGISTERS HERE)
-	-----------------------------------------------------------------------------
-	-- Miner Register Signals
-	signal ctrl_reg, status_reg, header_0_reg, header_1_reg : std_logic_vector(31 downto 0);
-	signal nonce_start_reg, nonce_end_reg, valid_nonce_reg : std_logic_vector(31 downto 0);
-	
-	-- FSM States
-	type state_type is (IDLE, ABSORB, SQUEEZE, DONE);
-	signal state : state_type := IDLE;
-	
-	-- Keccak control signals
-	signal keccak_init, keccak_go, keccak_absorb, keccak_squeeze : std_logic := '0';
-	signal keccak_ready : std_logic;
-	signal keccak_dout : std_logic_vector(63 downto 0);
 
+	------------------------------------------------
+	signal ctrl_reg        : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal status_reg      : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal header_0_reg    : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal header_1_reg    : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal nonce_start_reg : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal nonce_end_reg   : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal valid_nonce_reg : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+
+	
+	------------------------------------------------
+	-- Control components
+	------------------------------------------------
+	component core_fsm is
+		port (
+			clk     : in std_logic;
+			rst_n   : in std_logic;
+			nonce   : in std_logic_vector(N-1 downto 0);
+			finished: out std_logic := '0';
+			result  : out std_logic_vector(N-1 downto 0)
+		);
+	end component;
+
+	component result_compare is
+		port (
+			clk         : in std_logic;
+			rst_n       : in std_logic; -- use ready signal from PS as reset
+			target      : in std_logic_vector(N - 1 downto 0);
+			result      : in std_logic_vector(N - 1 downto 0);
+			fsm_ready   : in std_logic;
+			comp_sig    : out std_logic; -- serves as reset for other components
+			output_n    : out unsigned(N - 1 downto 0) := (others => '0')
+		);
+	end component;
+
+	component nonce_adder is
+		port (
+			clk         : in std_logic;
+			rst_n       : in std_logic;
+			nonce       : in std_logic_vector(N - 1 downto 0);
+			fsm_ready   : in std_logic;
+			-- comp_sig    : in std_logic;
+			start       : out std_logic;
+			added_nonce : out std_logic_vector(N - 1 downto 0)
+		);
+	end component;
+
+	component reg is 
+		port (
+			clk         : in std_logic;
+			rst_n       : in std_logic;
+			enable      : in std_logic;
+			din         : in std_logic_vector(N - 1 downto 0);
+			dout        : out std_logic_vector(N - 1 downto 0)
+		);
+	end component;
+    
 begin
     ------------------------------------------------
 	-- I/O Connections assignments
