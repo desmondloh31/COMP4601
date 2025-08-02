@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.keccak_globals.all;
 
 entity axi_miner is
 	generic (
@@ -132,10 +133,52 @@ architecture arch_imp of axi_miner is
 	signal valid_nonce_reg : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 
 	
-	
-	
-	
-    --
+	------------------------------------------------
+	-- Control components
+	------------------------------------------------
+	component core_fsm is
+		port (
+			clk     : in std_logic;
+			rst_n   : in std_logic;
+			nonce   : in std_logic_vector(N-1 downto 0);
+			finished: out std_logic := '0';
+			result  : out std_logic_vector(N-1 downto 0)
+		);
+	end component;
+
+	component result_compare is
+		port (
+			clk         : in std_logic;
+			rst_n       : in std_logic; -- use ready signal from PS as reset
+			target      : in std_logic_vector(N - 1 downto 0);
+			result      : in std_logic_vector(N - 1 downto 0);
+			fsm_ready   : in std_logic;
+			comp_sig    : out std_logic; -- serves as reset for other components
+			output_n    : out unsigned(N - 1 downto 0) := (others => '0')
+		);
+	end component;
+
+	component nonce_adder is
+		port (
+			clk         : in std_logic;
+			rst_n       : in std_logic;
+			nonce       : in std_logic_vector(N - 1 downto 0);
+			fsm_ready   : in std_logic;
+			-- comp_sig    : in std_logic;
+			start       : out std_logic;
+			added_nonce : out std_logic_vector(N - 1 downto 0)
+		);
+	end component;
+
+	component reg is 
+		port (
+			clk         : in std_logic;
+			rst_n       : in std_logic;
+			enable      : in std_logic;
+			din         : in std_logic_vector(N - 1 downto 0);
+			dout        : out std_logic_vector(N - 1 downto 0)
+		);
+	end component;
     
 begin
     ------------------------------------------------
