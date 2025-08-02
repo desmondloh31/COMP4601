@@ -75,7 +75,7 @@ int main() {
         // Get compare count
         compare_count = compare_data & COUNT_MASK;
         
-        // Exit loop is nonce found or compare limit reached
+        // Exit loop if nonce found or compare limit reached
         if (valid_found || compare_count >= MAX_COMPARE_COUNT) {
 
             uint32_t valid_nonce = nonce_start + compare_count;
