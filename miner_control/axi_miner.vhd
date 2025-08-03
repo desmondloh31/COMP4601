@@ -8,8 +8,9 @@ entity axi_miner is
         ------------------------------------------------
         -- AXI Lite parameters
         ------------------------------------------------
-		C_S_AXI_DATA_WIDTH	: integer	:= 32;
-		C_S_AXI_ADDR_WIDTH	: integer	:= 5
+		C_S_AXI_DATA_WIDTH	: integer	:= 64;
+		C_S_AXI_ADDR_WIDTH	: integer	:= 6;
+        N                   : integer   := 64
 	);
 	port (
         ------------------------------------------------
@@ -90,7 +91,7 @@ architecture arch_imp of axi_miner is
 
 	-- Hashing Core 
 	component keccak
-		generic ( N : integer := 64 );
+		-- generic ( N : integer := 64 );
 		port (
 			clk     : in  std_logic;
 			rst_n   : in  std_logic;
@@ -163,6 +164,7 @@ architecture arch_imp of axi_miner is
 	-- Control components
 	------------------------------------------------
 	component core_fsm is
+		-- generic ( N : integer := 64 );
 		port (
 			clk     : in std_logic;
 			rst_n   : in std_logic;
@@ -173,6 +175,7 @@ architecture arch_imp of axi_miner is
 	end component;
 
 	component result_compare is
+		-- generic ( N : integer := 64 );
 		port (
 			clk         : in std_logic;
 			rst_n       : in std_logic; -- use ready signal from PS as reset
@@ -185,6 +188,7 @@ architecture arch_imp of axi_miner is
 	end component;
 
 	component nonce_adder is
+		-- generic ( N : integer := 64 );
 		port (
 			clk         : in std_logic;
 			rst_n       : in std_logic;
@@ -197,6 +201,7 @@ architecture arch_imp of axi_miner is
 	end component;
 
 	component reg is 
+		-- generic ( N : integer := 64 );
 		port (
 			clk         : in std_logic;
 			rst_n       : in std_logic;
@@ -205,6 +210,18 @@ architecture arch_imp of axi_miner is
 			dout        : out std_logic_vector(N - 1 downto 0)
 		);
 	end component;
+
+    component controller is
+		-- generic ( N : integer := 64 );
+        port (
+            clk     : in std_logic;
+            rst_n   : in std_logic;
+            nonce   : in std_logic_vector(N-1 downto 0);
+            target  : in std_logic_vector(N-1 downto 0);
+            init    : in std_logic;
+            result  : out std_logic_vector(N-1 downto 0)
+        );
+    end component;
     
 begin
     ------------------------------------------------
@@ -220,19 +237,39 @@ begin
 	S_AXI_RVALID	<= axi_rvalid;
 
 	-- Instantiate Keccak core
-	keccak_inst : keccak
-		generic map ( N => 64 )
-		port map (
-			clk     => ps_clk,
-			rst_n   => rst_n,
-			init    => keccak_init,
-			go      => keccak_go,
-			absorb  => keccak_absorb,
-			squeeze => keccak_squeeze,
-			din     => header_0_reg & header_1_reg(31 downto 0),
-			ready   => keccak_ready,
-			dout    => keccak_dout
-		);
+--	keccak_inst : keccak
+--		generic map ( N => 64 )
+--		port map (
+--			clk     => ps_clk,
+--			rst_n   => rst_n,
+--			init    => keccak_init,
+--			go      => keccak_go,
+--			absorb  => keccak_absorb,
+--			squeeze => keccak_squeeze,
+--			din     => header_0_reg & header_1_reg(31 downto 0),
+--			ready   => keccak_ready,
+--			dout    => keccak_dout
+--		);
+
+--	controller : controller
+--		generic map ( N => 64 )
+--		port map (
+--			clk     => ps_clk,
+--			rst_n   => rst_n,
+--            nonce   => header_0_reg & header_1_reg(N-1 downto 0),
+--            target  => target_reg, 
+--            init    => keccak_init,
+--			result  => keccak_dout
+--		);
+    
+    controller : controller port map (
+        clk     => clk,
+        rst_n   => rst_n,
+        nonce   => header_0_reg & header_1_reg(N-1 downto 0),
+        target  => target_reg,
+        init    => keccak_init,
+        result  => keccak_dout
+    );
     
     
     ---------------------------------------------------------
