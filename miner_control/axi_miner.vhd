@@ -1,14 +1,15 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.keccak_globals.all;
+--use work.keccak_globals.all;
 
 entity axi_miner is
 	generic (
         ------------------------------------------------
         -- AXI Lite parameters
         ------------------------------------------------
-		C_S_AXI_DATA_WIDTH	: integer	:= 32;
+		-- C_S_AXI_DATA_WIDTH	: integer	:= 32;
+		C_S_AXI_DATA_WIDTH	: integer	:= 64;
 		C_S_AXI_ADDR_WIDTH	: integer	:= 5
 	);
 	port (
@@ -88,33 +89,33 @@ end axi_miner;
 
 architecture arch_imp of axi_miner is
 
-	-- Hashing Core 
-	component keccak
-		generic ( N : integer := 64 );
-		port (
-			clk     : in  std_logic;
-			rst_n   : in  std_logic;
-			init    : in  std_logic;
-			go      : in  std_logic;
-			absorb  : in  std_logic;
-			squeeze : in  std_logic;
-			din     : in  std_logic_vector(N-1 downto 0);
-			ready   : out std_logic;
-			dout    : out std_logic_vector(N-1 downto 0)
-		);
-	end component;
+	-- -- Hashing Core 
+	-- component keccak
+	-- 	generic ( N : integer := 64 );
+	-- 	port (
+	-- 		clk     : in  std_logic;
+	-- 		rst_n   : in  std_logic;
+	-- 		init    : in  std_logic;
+	-- 		go      : in  std_logic;
+	-- 		absorb  : in  std_logic;
+	-- 		squeeze : in  std_logic;
+	-- 		din     : in  std_logic_vector(N-1 downto 0);
+	-- 		ready   : out std_logic;
+	-- 		dout    : out std_logic_vector(N-1 downto 0)
+	-- 	);
+	-- end component;
 
-	-- Comparator 
-	component comparator
-		generic (
-		WIDTH : integer := 64
-		);
-		port (
-		hash_val    : in  std_logic_vector(WIDTH-1 downto 0);
-		target_val  : in  std_logic_vector(WIDTH-1 downto 0);
-		match_found : out std_logic
-		);
-	end component;
+	-- -- Comparator 
+	-- component comparator
+	-- 	generic (
+	-- 	WIDTH : integer := 64
+	-- 	);
+	-- 	port (
+	-- 	hash_val    : in  std_logic_vector(WIDTH-1 downto 0);
+	-- 	target_val  : in  std_logic_vector(WIDTH-1 downto 0);
+	-- 	match_found : out std_logic
+	-- 	);
+	-- end component;
     ------------------------------------------------
 	-- AXI4LITE signals
     ------------------------------------------------
@@ -150,53 +151,83 @@ architecture arch_imp of axi_miner is
 	-- Signals for user logic register space example (PUT YOUR REGISTERS HERE)
 
 	------------------------------------------------
-	signal ctrl_reg        : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-	signal status_reg      : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-	signal header_0_reg    : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-	signal header_1_reg    : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-	signal nonce_start_reg : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-	signal nonce_end_reg   : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-	signal valid_nonce_reg : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	-- signal ctrl_reg        : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	-- signal status_reg      : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	-- signal header_0_reg    : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	-- signal header_1_reg    : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	-- signal nonce_start_reg : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	-- signal nonce_end_reg   : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	-- signal valid_nonce_reg : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 
-	
+	signal nonce_reg        : std_logic_vector(63 downto 0);
+	signal target_reg       : std_logic_vector(63 downto 0);
+	signal init_reg         : std_logic;
+	signal found_nonce      : std_logic_vector(63 downto 0);
+
+	signal n_reg_din      : std_logic_vector(63 downto 0);
+    signal n_reg_dout     : std_logic_vector(63 downto 0);
+    signal n_reg_we       : std_logic;
+
+    signal t_reg_din      : std_logic_vector(63 downto 0);
+    signal t_reg_dout     : std_logic_vector(63 downto 0);
+    signal t_reg_we       : std_logic;
+    signal init_reg_we    : std_logic;
+
+    signal ctrl_reg        : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+    signal status_reg      : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+    signal valid_nonce_reg : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 	------------------------------------------------
 	-- Control components
 	------------------------------------------------
-	component core_fsm is
+	-- component core_fsm is
+	-- 	port (
+	-- 		clk     : in std_logic;
+	-- 		rst_n   : in std_logic;
+	-- 		nonce   : in std_logic_vector(N-1 downto 0);
+	-- 		finished: out std_logic := '0';
+	-- 		result  : out std_logic_vector(N-1 downto 0)
+	-- 	);
+	-- end component;
+
+	-- component result_compare is
+	-- 	port (
+	-- 		clk         : in std_logic;
+	-- 		rst_n       : in std_logic; -- use ready signal from PS as reset
+	-- 		target      : in std_logic_vector(N - 1 downto 0);
+	-- 		result      : in std_logic_vector(N - 1 downto 0);
+	-- 		fsm_ready   : in std_logic;
+	-- 		comp_sig    : out std_logic; -- serves as reset for other components
+	-- 		output_n    : out unsigned(N - 1 downto 0) := (others => '0')
+	-- 	);
+	-- end component;
+
+	-- component nonce_adder is
+	-- 	port (
+	-- 		clk         : in std_logic;
+	-- 		rst_n       : in std_logic;
+	-- 		nonce       : in std_logic_vector(N - 1 downto 0);
+	-- 		fsm_ready   : in std_logic;
+	-- 		-- comp_sig    : in std_logic;
+	-- 		start       : out std_logic;
+	-- 		added_nonce : out std_logic_vector(N - 1 downto 0)
+	-- 	);
+	-- end component;
+	component controller is
+		generic (
+			N : integer := 64
+		);
 		port (
 			clk     : in std_logic;
 			rst_n   : in std_logic;
 			nonce   : in std_logic_vector(N-1 downto 0);
-			finished: out std_logic := '0';
+			target  : in std_logic_vector(N-1 downto 0);
+			init    : in std_logic;
 			result  : out std_logic_vector(N-1 downto 0)
 		);
 	end component;
 
-	component result_compare is
-		port (
-			clk         : in std_logic;
-			rst_n       : in std_logic; -- use ready signal from PS as reset
-			target      : in std_logic_vector(N - 1 downto 0);
-			result      : in std_logic_vector(N - 1 downto 0);
-			fsm_ready   : in std_logic;
-			comp_sig    : out std_logic; -- serves as reset for other components
-			output_n    : out unsigned(N - 1 downto 0) := (others => '0')
-		);
-	end component;
-
-	component nonce_adder is
-		port (
-			clk         : in std_logic;
-			rst_n       : in std_logic;
-			nonce       : in std_logic_vector(N - 1 downto 0);
-			fsm_ready   : in std_logic;
-			-- comp_sig    : in std_logic;
-			start       : out std_logic;
-			added_nonce : out std_logic_vector(N - 1 downto 0)
-		);
-	end component;
-
 	component reg is 
+		generic ( N : integer := 64 );
 		port (
 			clk         : in std_logic;
 			rst_n       : in std_logic;
@@ -220,21 +251,39 @@ begin
 	S_AXI_RVALID	<= axi_rvalid;
 
 	-- Instantiate Keccak core
-	keccak_inst : keccak
-		generic map ( N => 64 )
-		port map (
-			clk     => ps_clk,
-			rst_n   => rst_n,
-			init    => keccak_init,
-			go      => keccak_go,
-			absorb  => keccak_absorb,
-			squeeze => keccak_squeeze,
-			din     => header_0_reg & header_1_reg(31 downto 0),
-			ready   => keccak_ready,
-			dout    => keccak_dout
-		);
+	-- keccak_inst : keccak
+	-- 	generic map ( N => 64 )
+	-- 	port map (
+	-- 		clk     => ps_clk,
+	-- 		rst_n   => rst_n,
+	-- 		init    => keccak_init,
+	-- 		go      => keccak_go,
+	-- 		absorb  => keccak_absorb,
+	-- 		squeeze => keccak_squeeze,
+	-- 		din     => header_0_reg & header_1_reg(31 downto 0),
+	-- 		ready   => keccak_ready,
+	-- 		dout    => keccak_dout
+	-- 	);
     
-    
+    -- nonce register
+	n_reg : reg
+	port map(
+		clk    => S_AXI_ACLK,
+		rst_n  => S_AXI_ARESETN,
+		enable => n_reg_we,
+		din    => n_reg_din,
+		dout   => n_reg_dout
+	);
+
+	-- target register
+	t_reg : reg
+	port map (
+		clk    => S_AXI_ACLK,
+		rst_n  => S_AXI_ARESETN,
+		enable => t_reg_we,
+		din    => t_reg_din,
+		dout   => t_reg_dout
+	);
     ---------------------------------------------------------
 	-- FSM LOGIC TO CONTROL KECCAK HASHING CORE FOR MINING 
     ---------------------------------------------------------
@@ -259,6 +308,16 @@ begin
     ------------------------------------------------
 
     -- SEE control.vhd
+	controller_inst : controller
+	generic map ( N => 64 )
+	port map (
+		clk    => S_AXI_ACLK,
+		rst_n  => S_AXI_ARESETN,
+		nonce  => n_reg_dout,
+		target => t_reg_dout,
+		init   => init_reg,
+		result => found_nonce
+	);
 
     ------------------------------------------------
 	-- AXI reading/writing
@@ -352,59 +411,34 @@ begin
 	begin
 		if rising_edge(S_AXI_ACLK) then 
 			if S_AXI_ARESETN = '0' then
-				ctrl_reg        <= (others => '0');
-				header_0_reg    <= (others => '0');
-				header_1_reg    <= (others => '0');
-				nonce_start_reg <= (others => '0');
-				nonce_end_reg   <= (others => '0');
-				valid_nonce_reg <= (others => '0');
-				status_reg      <= (others => '0');
+				n_reg_we    <= '0';
+				n_reg_din   <= (others => '0');
+				t_reg_we    <= '0';
+				t_reg_din   <= (others => '0');
+				init_reg_we <= '0';
+				init_reg    <= '0';
 			else
+				n_reg_we    <= '0';
+				t_reg_we    <= '0';
+				init_reg_we <= '0';
 				loc_addr := axi_awaddr(ADDR_LSB + OPT_MEM_ADDR_BITS downto ADDR_LSB);
 				if (slv_reg_wren = '1') then
 					case loc_addr is
-						when "00" => -- ctrl_reg
-							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
-								if (S_AXI_WSTRB(byte_index) = '1') then
-									ctrl_reg(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
-								end if;
-							end loop;
-						when "01" => -- header_0_reg
-							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
-								if (S_AXI_WSTRB(byte_index) = '1') then
-									header_0_reg(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
-								end if;
-							end loop;
-						when "10" => -- header_1_reg
-							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
-								if (S_AXI_WSTRB(byte_index) = '1') then
-									header_1_reg(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
-								end if;
-							end loop;
-						when "11" => -- nonce_start_reg
-							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
-								if (S_AXI_WSTRB(byte_index) = '1') then
-									nonce_start_reg(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
-								end if;
-							end loop;
-						when "100" => -- nonce_end_reg
-							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
-								if (S_AXI_WSTRB(byte_index) = '1') then
-									nonce_end_reg(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
-								end if;
-							end loop;
-						when "101" => -- valid_nonce_reg (optional write)
-							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
-								if (S_AXI_WSTRB(byte_index) = '1') then
-									valid_nonce_reg(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
-								end if;
-							end loop;
+						when "00" =>  -- nonce
+							n_reg_din <= S_AXI_WDATA;
+							n_reg_we  <= '1';
+						when "01" =>  -- target
+							t_reg_din <= S_AXI_WDATA;
+							t_reg_we  <= '1';
+						when "10" =>  -- init/start
+							init_reg  <= S_AXI_WDATA(0);
+							init_reg_we <= '1';
 						when others =>
-							null; -- ignore
+							null;
 					end case;
 				end if;
 			end if;
-		end if;                   
+		end if;             
 	end process;
 
 	-- This block acknowledges a successful write from master (PS) to AXI Slave
@@ -503,13 +537,14 @@ begin
 		-- Address decoding for reading registers
 		loc_addr := axi_araddr(ADDR_LSB + OPT_MEM_ADDR_BITS downto ADDR_LSB);
 		case loc_addr is
-			when "000" =>  -- 0x00: Control register (start, reset)
-				reg_data_out <= ctrl_reg;
-			when "001" =>  -- 0x04: Status register (ready, done, etc.)
+			when "00" =>  -- status
 				reg_data_out <= status_reg;
-			when "010" =>  -- 0x08: Valid nonce output register
-				reg_data_out <= valid_nonce_reg;
-			-- Add more cases below if needed, e.g., nonce_start_reg, header_0, etc.
+			when "01" =>  -- reserved
+				reg_data_out <= (others => '0');
+			when "10" =>  -- reserved
+				reg_data_out <= (others => '0');
+			when "11" =>  -- found nonce
+				reg_data_out <= found_nonce;
 			when others =>
 				reg_data_out <= (others => '0');
 		end case;

@@ -4,7 +4,7 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity controller is 
     generic (
-        N : integer := 32  -- Assuming 32-bit width, adjust as needed
+        N : integer := 64  -- Assuming 32-bit width, adjust as needed
     );
     port (
         clk     : in std_logic;
