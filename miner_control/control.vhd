@@ -84,6 +84,7 @@ begin
                 current_nonce <= nonce;  -- Load initial nonce
             elsif comp_sig = '1' then
                 mining_active <= '0';    -- Stop mining when solution found
+                result <= current_nonce;
             elsif hash_finished = '1' and comp_sig = '0' then
                 -- Continue mining: load next nonce when hash completes and no solution found
                 current_nonce <= next_nonce;
