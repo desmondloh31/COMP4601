@@ -22,15 +22,17 @@ begin
 
     process(clk, rst_n)
     begin
-        if rising_edge(clk) and rst_n = '0' then
-            n <= (others => '0');
-            start_reg <= '0';
-        elsif rising_edge(clk) then
-            if fsm_ready = '1' then
-                n <= n + 1;
-                start_reg <= '1';
-            else
+        if rising_edge(clk) then
+            if rst_n = '0' then
+                n <= (others => '0');
                 start_reg <= '0';
+            else
+                if fsm_ready = '1' then
+                    n <= n + 1;
+                    start_reg <= '1';
+                else
+                    start_reg <= '0';
+                end if;
             end if;
         end if;
     end process;

@@ -28,34 +28,36 @@ begin
 
     process(clk, rst_n)
     begin
-        if rising_edge(clk) and rst_n = '0' then
-            n <= (others => '0');
-            done <= '0';
-            comp_sig <= '0';
-            output_n <= (others => '0');
-        elsif rising_edge(clk) then
-            if done = '1' then
-                -- Once done, hold status
-                comp_sig <= '1';
-                output_n <= n;
-            elsif fsm_ready = '1' then
-                if unsigned(result) < unsigned(target) then
-                    -- result found, write '1' to the first bit
-                    n(63) <= '1';
+        if rising_edge(clk) then
+            if rst_n = '0' then
+                n <= (others => '0');
+                done <= '0';
+                comp_sig <= '0';
+                output_n <= (others => '0');
+            else
+                if done = '1' then
+                    -- Once done, hold status
                     comp_sig <= '1';
                     output_n <= n;
-                    done <= '1';
-                elsif n = N_MAX then
-                    n(63) <= '0';
-                    comp_sig <= '1';
-                    output_n <= n;
-                    done <= '1';
+                elsif fsm_ready = '1' then
+                    if unsigned(result) < unsigned(target) then
+                        -- result found, write '1' to the first bit
+                        n(63) <= '1';
+                        comp_sig <= '1';
+                        output_n <= n;
+                        done <= '1';
+                    elsif n = N_MAX then
+                        n(63) <= '0';
+                        comp_sig <= '1';
+                        output_n <= n;
+                        done <= '1';
+                    else
+                        comp_sig <= '0';
+                        n <= n + 1;
+                    end if;
                 else
                     comp_sig <= '0';
-                    n <= n + 1;
                 end if;
-            else
-                comp_sig <= '0';
             end if;
         end if;
     end process;
