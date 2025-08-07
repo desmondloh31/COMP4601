@@ -1,3 +1,4 @@
 /**/*.o
+/tiny_sha3/hls_component/**
 
 

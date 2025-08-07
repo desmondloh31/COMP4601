@@ -165,7 +165,7 @@ void words_to_bytes(const uint64_t words[25], uint8_t bytes[200])
     }
 }
 
-/*
+
 void sha3_init_hls(sha3_ctx_hls_t *ctx, int mdlen)
 {
     #pragma HLS INTERFACE mode=s_axilite port=ctx
@@ -189,7 +189,7 @@ void sha3_init_hls(sha3_ctx_hls_t *ctx, int mdlen)
     ctx->pt = 0;
     ctx->buffer_valid = 0;
 }
-*/
+
 
 // Block-oriented processing to eliminate dataflow hazards
 void sha3_absorb_block_hls(
