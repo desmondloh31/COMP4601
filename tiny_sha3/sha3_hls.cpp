@@ -9,10 +9,10 @@
 
 void sha3_keccakf_hls(uint64_t state[25])
 {
-    #pragma HLS INTERFACE mode=bram port=state
+    #pragma HLS INLINE off
     #pragma HLS ARRAY_PARTITION variable=state complete dim=1
     
-    // Constants - marked static for ROM inference
+    // Keccak constants
     static const uint64_t keccakf_rndc[24] = {
         0x0000000000000001ULL, 0x0000000000008082ULL, 0x800000000000808aULL,
         0x8000000080008000ULL, 0x000000000000808bULL, 0x0000000080000001ULL,
@@ -23,47 +23,44 @@ void sha3_keccakf_hls(uint64_t state[25])
         0x000000000000800aULL, 0x800000008000000aULL, 0x8000000080008081ULL,
         0x8000000000008080ULL, 0x0000000080000001ULL, 0x8000000080008008ULL
     };
-    #pragma HLS ARRAY_PARTITION variable=keccakf_rndc complete dim=1
+    #pragma HLS RESOURCE variable=keccakf_rndc core=ROM_1P_BRAM
 
     static const int keccakf_rotc[24] = {
         1,  3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14,
         27, 41, 56, 8,  25, 43, 62, 18, 39, 61, 20, 44
     };
-    #pragma HLS ARRAY_PARTITION variable=keccakf_rotc complete dim=1
+    #pragma HLS RESOURCE variable=keccakf_rotc core=ROM_1P_BRAM
 
     static const int keccakf_piln[24] = {
         10, 7,  11, 17, 18, 3, 5,  16, 8,  21, 24, 4,
         15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1
     };
-    #pragma HLS ARRAY_PARTITION variable=keccakf_piln complete dim=1
+    #pragma HLS RESOURCE variable=keccakf_piln core=ROM_1P_BRAM
 
-    // Local variables
     uint64_t t, bc[5];
     #pragma HLS ARRAY_PARTITION variable=bc complete dim=1
 
-    // Round function with pipeline optimization
+    // Keccak-f rounds
     ROUND_LOOP: for (int r = 0; r < KECCAKF_ROUNDS; r++) {
-        #pragma HLS PIPELINE off  // Pipeline individual steps instead
+        #pragma HLS PIPELINE off
         
-        // Theta step - compute column parities
-        THETA_PARITY: for (int i = 0; i < 5; i++) {
+        // Theta columns
+        THETA_1: for (int i = 0; i < 5; i++) {
             #pragma HLS UNROLL
             bc[i] = state[i] ^ state[i + 5] ^ state[i + 10] ^ state[i + 15] ^ state[i + 20];
         }
-
-        // Theta step - apply transformation
-        THETA_TRANSFORM: for (int i = 0; i < 5; i++) {
+        
+        // Theta rows
+        THETA_2: for (int i = 0; i < 5; i++) {
             #pragma HLS UNROLL
             t = bc[(i + 4) % 5] ^ ROTL64(bc[(i + 1) % 5], 1);
-            // Unroll the inner loop completely
             state[i]      ^= t;
-            state[i + 5]  ^= t;
+            state[i + 5]  ^= t; 
             state[i + 10] ^= t;
             state[i + 15] ^= t;
             state[i + 20] ^= t;
         }
 
-        // Rho and Pi steps combined
         t = state[1];
         RHO_PI: for (int i = 0; i < 24; i++) {
             #pragma HLS PIPELINE II=1
@@ -73,403 +70,281 @@ void sha3_keccakf_hls(uint64_t state[25])
             t = bc[0];
         }
 
-        // Chi step - process 5 rows in parallel
-        CHI_ROW_0: for (int i = 0; i < 5; i++) {
+        // Chi (unrolled for all 5 rows)
+        CHI_ROW: for (int row = 0; row < 5; row++) {
             #pragma HLS UNROLL
-            bc[i] = state[i];
-        }
-        for (int i = 0; i < 5; i++) {
-            #pragma HLS UNROLL
-            state[i] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
-        }
-
-        CHI_ROW_1: for (int i = 0; i < 5; i++) {
-            #pragma HLS UNROLL
-            bc[i] = state[i + 5];
-        }
-        for (int i = 0; i < 5; i++) {
-            #pragma HLS UNROLL
-            state[i + 5] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
+            int base = row * 5;
+            for (int i = 0; i < 5; i++) {
+                #pragma HLS UNROLL
+                bc[i] = state[base + i];
+            }
+            for (int i = 0; i < 5; i++) {
+                #pragma HLS UNROLL
+                state[base + i] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
+            }
         }
 
-        CHI_ROW_2: for (int i = 0; i < 5; i++) {
-            #pragma HLS UNROLL
-            bc[i] = state[i + 10];
-        }
-        for (int i = 0; i < 5; i++) {
-            #pragma HLS UNROLL
-            state[i + 10] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
-        }
-
-        CHI_ROW_3: for (int i = 0; i < 5; i++) {
-            #pragma HLS UNROLL
-            bc[i] = state[i + 15];
-        }
-        for (int i = 0; i < 5; i++) {
-            #pragma HLS UNROLL
-            state[i + 15] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
-        }
-
-        CHI_ROW_4: for (int i = 0; i < 5; i++) {
-            #pragma HLS UNROLL
-            bc[i] = state[i + 20];
-        }
-        for (int i = 0; i < 5; i++) {
-            #pragma HLS UNROLL
-            state[i + 20] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
-        }
-
-        // Iota step
+        // Iota
         state[0] ^= keccakf_rndc[r];
     }
 }
 
-
-void bytes_to_words(const uint8_t bytes[200], uint64_t words[25])
+// Hash a nonce (adder-hasher component)
+void hash_nonce(uint32_t nonce, uint32_t *hash_output, bool *valid)
 {
-    #pragma HLS inline
-    #pragma HLS ARRAY_PARTITION variable=words complete dim=1
+    #pragma HLS INLINE off
+    #pragma HLS PIPELINE off
     
-    CONVERT_LOOP: for (int i = 0; i < 25; i++) {
-        #pragma HLS UNROLL
-        int byte_offset = i * 8;
-        words[i] = ((uint64_t)bytes[byte_offset])     |
-                   ((uint64_t)bytes[byte_offset + 1] << 8)  |
-                   ((uint64_t)bytes[byte_offset + 2] << 16) |
-                   ((uint64_t)bytes[byte_offset + 3] << 24) |
-                   ((uint64_t)bytes[byte_offset + 4] << 32) |
-                   ((uint64_t)bytes[byte_offset + 5] << 40) |
-                   ((uint64_t)bytes[byte_offset + 6] << 48) |
-                   ((uint64_t)bytes[byte_offset + 7] << 56);
-    }
-}
-
-
-void words_to_bytes(const uint64_t words[25], uint8_t bytes[200])
-{
-    #pragma HLS inline
-    #pragma HLS ARRAY_PARTITION variable=words complete dim=1
-    
-    CONVERT_LOOP: for (int i = 0; i < 25; i++) {
-        #pragma HLS UNROLL
-        int byte_offset = i * 8;
-        uint64_t word = words[i];
-        bytes[byte_offset]     = word & 0xFF;
-        bytes[byte_offset + 1] = (word >> 8) & 0xFF;
-        bytes[byte_offset + 2] = (word >> 16) & 0xFF;
-        bytes[byte_offset + 3] = (word >> 24) & 0xFF;
-        bytes[byte_offset + 4] = (word >> 32) & 0xFF;
-        bytes[byte_offset + 5] = (word >> 40) & 0xFF;
-        bytes[byte_offset + 6] = (word >> 48) & 0xFF;
-        bytes[byte_offset + 7] = (word >> 56) & 0xFF;
-    }
-}
-
-
-void sha3_init_hls(sha3_ctx_hls_t *ctx, int mdlen)
-{
-    #pragma HLS INTERFACE mode=s_axilite port=ctx
-    #pragma HLS INTERFACE mode=s_axilite port=mdlen
-    #pragma HLS INTERFACE mode=s_axilite port=return
-    
-    // Initialize state
-    INIT_STATE: for (int i = 0; i < 25; i++) {
-        #pragma HLS UNROLL
-        ctx->state[i] = 0;
-    }
-    
-    // Initialize buffer
-    INIT_BUFFER: for (int i = 0; i < 200; i++) {
-        #pragma HLS UNROLL factor=8
-        ctx->buffer[i] = 0;
-    }
-    
-    ctx->mdlen = mdlen;
-    ctx->rsiz = 200 - 2 * mdlen;
-    ctx->pt = 0;
-    ctx->buffer_valid = 0;
-}
-
-
-// Block-oriented processing to eliminate dataflow hazards
-void sha3_absorb_block_hls(
-    uint64_t state[25],
-    const uint8_t block_data[200],
-    int rate_size
-)
-{
-    #pragma HLS INTERFACE mode=bram port=state
-    #pragma HLS INTERFACE mode=bram port=block_data
-    #pragma HLS INTERFACE mode=s_axilite port=rate_size
-    #pragma HLS INTERFACE mode=s_axilite port=return
-    
+    // Initialize SHA-3 state
+    uint64_t state[25];
     #pragma HLS ARRAY_PARTITION variable=state complete dim=1
     
-    // XOR input block with state (absorb phase)
-    ABSORB_LOOP: for (int i = 0; i < 25; i++) {
+    INIT_STATE: for (int i = 0; i < 25; i++) {
         #pragma HLS UNROLL
-        if (i * 8 < rate_size) {
-            uint64_t input_word = 0;
-            // Pack 8 bytes into 64-bit word
-            PACK_BYTES: for (int b = 0; b < 8; b++) {
-                #pragma HLS UNROLL
-                int byte_idx = i * 8 + b;
-                if (byte_idx < rate_size) {
-                    input_word |= ((uint64_t)block_data[byte_idx]) << (b * 8);
-                }
-            }
-            state[i] ^= input_word;
-        }
+        state[i] = 0;
     }
     
-    // Apply Keccak-f permutation
+    // Absorb nonce (simplified - just place nonce in first word)
+    // Real mining include block header + nonce
+    // For sake of demonstration we ignore it here
+    state[0] ^= (uint64_t)nonce;
+    
+    // Apply padding for SHA-3 
+    state[0] ^= 0x06ULL << 32;  // Domain separation  
+    state[(SHA3_256_RATE/8) - 1] ^= 0x8000000000000000ULL;
+    
     sha3_keccakf_hls(state);
+    
+    // Extract first 32 bits of hash for comparison
+    *hash_output = (uint32_t)(state[0] & 0xFFFFFFFFULL);
+    *valid = true;
 }
 
-
-// Separate buffer management from processing
-void sha3_buffer_and_process_hls(
-    sha3_ctx_hls_t *ctx,
-    const uint8_t message_block[MAX_MESSAGE_SIZE],
-    int block_size,
-    int is_final_block
-)
+// Compare hash with target (comparator component)
+bool compare_hash(uint32_t hash_value, uint32_t target)
 {
-    #pragma HLS INTERFACE mode=s_axilite port=ctx
-    #pragma HLS INTERFACE mode=bram port=message_block
-    #pragma HLS INTERFACE mode=s_axilite port=block_size
-    #pragma HLS INTERFACE mode=s_axilite port=is_final_block
-    #pragma HLS INTERFACE mode=s_axilite port=return
-    
-    // Local working buffer to avoid memory dependencies
-    uint8_t working_buffer[200];
-    #pragma HLS ARRAY_PARTITION variable=working_buffer cyclic factor=8
-    
-    // Copy current buffer state
-    COPY_BUFFER: for (int i = 0; i < 200; i++) {
-        #pragma HLS UNROLL factor=8
-        working_buffer[i] = ctx->buffer[i];
-    }
-    
-    int current_pt = ctx->pt;
-    int rate_size = ctx->rsiz;
-    
-    // Process input in chunks that align with rate boundaries
-    int input_idx = 0;
-    
-    CHUNK_LOOP: while (input_idx < block_size) {
-        #pragma HLS LOOP_TRIPCOUNT min=1 max=32
-        
-        // Calculate how many bytes we can process in this chunk
-        int remaining_in_buffer = rate_size - current_pt;
-        int remaining_input = block_size - input_idx;
-        int chunk_size = (remaining_in_buffer < remaining_input) ? remaining_in_buffer : remaining_input;
-        
-        // Fill buffer with input data
-        FILL_BUFFER: for (int i = 0; i < chunk_size; i++) {
-            #pragma HLS PIPELINE II=1
-            working_buffer[current_pt + i] ^= message_block[input_idx + i];
-        }
-        
-        current_pt += chunk_size;
-        input_idx += chunk_size;
-        
-        // If buffer is full, process it
-        if (current_pt >= rate_size) {
-            sha3_absorb_block_hls(ctx->state, working_buffer, rate_size);
-            
-            // Clear the rate portion of buffer
-            CLEAR_BUFFER: for (int i = 0; i < rate_size; i++) {
-                #pragma HLS UNROLL factor=8
-                working_buffer[i] = 0;
-            }
-            current_pt = 0;
-        }
-    }
-    
-    // Handle final block padding
-    if (is_final_block) {
-        // Apply domain separation and padding
-        working_buffer[current_pt] ^= 0x06;
-        working_buffer[rate_size - 1] ^= 0x80;
-        
-        // Final absorption
-        sha3_absorb_block_hls(ctx->state, working_buffer, rate_size);
-        current_pt = 0;
-        
-        // Clear buffer after final processing
-        FINAL_CLEAR: for (int i = 0; i < 200; i++) {
-            #pragma HLS UNROLL factor=8
-            working_buffer[i] = 0;
-        }
-    }
-    
-    // Update context
-    ctx->pt = current_pt;
-    UPDATE_CTX_BUFFER: for (int i = 0; i < 200; i++) {
-        #pragma HLS UNROLL factor=8
-        ctx->buffer[i] = working_buffer[i];
-    }
+    #pragma HLS INLINE
+    return hash_value < target;
 }
 
-
-void sha3_get_hash_hls(
-    const sha3_ctx_hls_t *ctx,
-    uint8_t hash_output[MAX_OUTPUT_SIZE],
-    int output_length
-)
+// Nonce incrementer
+uint32_t increment_nonce(uint32_t current_nonce)
 {
-    #pragma HLS INTERFACE mode=s_axilite port=ctx
-    #pragma HLS INTERFACE mode=bram port=hash_output
-    #pragma HLS INTERFACE mode=s_axilite port=output_length
-    #pragma HLS INTERFACE mode=s_axilite port=return
-    
-    // Copy hash output with bounds checking
-    OUTPUT_LOOP: for (int i = 0; i < MAX_OUTPUT_SIZE; i++) {
-        #pragma HLS PIPELINE II=1
-        if (i < output_length && i < MAX_OUTPUT_SIZE) {
-            hash_output[i] = ctx->buffer[i];
-        } else {
-            hash_output[i] = 0;  // Pad with zeros
-        }
-    }
+    #pragma HLS INLINE
+    return current_nonce + 1;
 }
 
-// ======== TOP-LEVEL CALLER APIs ========
-
-// Pipelined SHA-3 computation optimized for throughput
-void sha3_compute_pipelined_hls(
-    const uint8_t input_message[MAX_MESSAGE_SIZE],
-    int message_length,
-    uint8_t output_hash[MAX_OUTPUT_SIZE],
-    int hash_length
+// Desynchronized mining pipeline
+void mining_pipeline(
+    uint32_t initial_nonce,
+    uint32_t target,
+    bool start_mining,
+    bool *found_solution,
+    uint32_t *solution_nonce,
+    uint64_t *hash_count
 )
 {
-    #pragma HLS INTERFACE mode=bram port=input_message
-    #pragma HLS INTERFACE mode=s_axilite port=message_length
-    #pragma HLS INTERFACE mode=bram port=output_hash
-    #pragma HLS INTERFACE mode=s_axilite port=hash_length
-    #pragma HLS INTERFACE mode=s_axilite port=return
+    // Pipeline state
+    static uint32_t current_nonce = 0;
+    static uint64_t total_hashes = 0;
+    static bool pipeline_active = false;
     
-    // Use separate processing stages for better pipelining
-    sha3_ctx_hls_t ctx;
-    #pragma HLS ARRAY_PARTITION variable=ctx.state complete dim=1
+    // Pipeline registers for desynchronization
+    // BACKUP PIPELINE BUFFER if somehow comparator lags adder-hasher
+    static hash_result_t pipeline_stage[MAX_PIPELINE_DEPTH];
+    #pragma HLS ARRAY_PARTITION variable=pipeline_stage complete dim=1
+    static int pipeline_head = 0;
+    static int pipeline_tail = 0;
     
-    // Stage 1: Initialize
-    sha3_init_hls(&ctx, hash_length);
+    *found_solution = false;
+    *solution_nonce = 0;
+    *hash_count = total_hashes;
     
-    // Stage 2: Process with optimized buffer management
-    sha3_buffer_and_process_hls(&ctx, input_message, message_length, 1);
-    
-    // Stage 3: Extract hash
-    sha3_get_hash_hls(&ctx, output_hash, hash_length);
-}
-
-// ======== STREMAING HLS CURRENTLY DISABLED ========
-
-/*
-// High-performance streaming version with predictable timing
-void sha3_streaming_optimized_hls(
-    const uint8_t input_blocks[256][200],  // Pre-chunked blocks
-    uint8_t output_hashes[256][MAX_OUTPUT_SIZE],
-    int num_blocks,
-    int hash_length
-)
-{
-    #pragma HLS INTERFACE mode=bram port=input_blocks
-    #pragma HLS INTERFACE mode=bram port=output_hashes  
-    #pragma HLS INTERFACE mode=s_axilite port=num_blocks
-    #pragma HLS INTERFACE mode=s_axilite port=hash_length
-    #pragma HLS INTERFACE mode=s_axilite port=return
-    
-    #pragma HLS ARRAY_PARTITION variable=input_blocks complete dim=2
-    #pragma HLS ARRAY_PARTITION variable=output_hashes complete dim=2
-    
-    // Process blocks with deterministic timing
-    STREAM_BLOCKS: for (int block = 0; block < num_blocks && block < 256; block++) {
-        #pragma HLS PIPELINE II=1
-        #pragma HLS LOOP_TRIPCOUNT min=1 max=256
+    // Initialize on start
+    if (start_mining && !pipeline_active) {
+        current_nonce = initial_nonce;
+        total_hashes = 0;
+        pipeline_active = true;
+        pipeline_head = 0;
+        pipeline_tail = 0;
         
-        // Each block is processed independently - no state dependencies
-        uint64_t local_state[25];
-        #pragma HLS ARRAY_PARTITION variable=local_state complete dim=1
-        
-        // Initialize local state
-        INIT_LOCAL: for (int i = 0; i < 25; i++) {
+        // Clear pipeline
+        CLEAR_PIPELINE: for (int i = 0; i < MAX_PIPELINE_DEPTH; i++) {
             #pragma HLS UNROLL
-            local_state[i] = 0;
-        }
-        
-        // Process block directly (assumes block is exactly one rate-sized chunk)
-        sha3_absorb_block_hls(local_state, input_blocks[block], 200 - 2 * hash_length);
-        
-        // Extract output (squeeze phase)
-        EXTRACT_OUTPUT: for (int i = 0; i < hash_length && i < MAX_OUTPUT_SIZE; i++) {
-            #pragma HLS PIPELINE II=1
-            // Convert state words back to bytes for output
-            int word_idx = i / 8;
-            int byte_in_word = i % 8;
-            output_hashes[block][i] = (local_state[word_idx] >> (byte_in_word * 8)) & 0xFF;
+            pipeline_stage[i].valid = false;
         }
     }
-}
-*/
+    
+    if (!pipeline_active) {
+        return;
+    }
+    
+    // ======== ADDER - HASHER ========
+    // Hash current nonce 
+    uint32_t hash_result;
+    bool hash_valid;
+    hash_nonce(current_nonce, &hash_result, &hash_valid);
+    
+    if (hash_valid) {
+        // Insert into pipeline
+        pipeline_stage[pipeline_head].nonce = current_nonce;
+        pipeline_stage[pipeline_head].hash_value = hash_result;
+        pipeline_stage[pipeline_head].valid = true;
+        pipeline_head = (pipeline_head + 1) % MAX_PIPELINE_DEPTH;
+        
+        // Increment nonce for next iteration
+        current_nonce = increment_nonce(current_nonce);
+        total_hashes++;
+    }
 
-/*
-void sha3_streaming_hls(
-    const uint8_t input_stream[MAX_MESSAGE_SIZE],
-    uint8_t output_stream[MAX_OUTPUT_SIZE],
-    const int block_lengths[256],  // Fixed-size array of block lengths
-    int num_blocks,
-    int hash_length
+    // ======== COMPARATOR ========
+    
+    // Check pipeline tail 
+    if (pipeline_stage[pipeline_tail].valid) {
+        hash_result_t current_result = pipeline_stage[pipeline_tail];
+        pipeline_stage[pipeline_tail].valid = false;
+        pipeline_tail = (pipeline_tail + 1) % MAX_PIPELINE_DEPTH;
+        
+        // Compare with target
+        if (compare_hash(current_result.hash_value, target)) {
+            *found_solution = true;
+            *solution_nonce = current_result.nonce;
+            pipeline_active = false;
+        }
+    }
+    
+    *hash_count = total_hashes;
+}
+
+// Top-level mining controller (AXI-Lite interface)
+void sha3_miner_top(
+    uint32_t *control_start,
+    uint32_t *control_stop, 
+    uint32_t *control_status,
+    uint32_t *control_initial_nonce,
+    uint32_t *control_target_hash,
+    uint32_t *control_result_nonce,
+    uint32_t *control_hash_count_low,
+    uint32_t *control_hash_count_high
 )
 {
-    #pragma HLS INTERFACE mode=bram port=input_stream
-    #pragma HLS INTERFACE mode=bram port=output_stream
-    #pragma HLS INTERFACE mode=bram port=block_lengths
-    #pragma HLS INTERFACE mode=s_axilite port=num_blocks
-    #pragma HLS INTERFACE mode=s_axilite port=hash_length
-    #pragma HLS INTERFACE mode=s_axilite port=return
+    #pragma HLS INTERFACE mode=s_axilite port=control_start bundle=control
+    #pragma HLS INTERFACE mode=s_axilite port=control_stop bundle=control
+    #pragma HLS INTERFACE mode=s_axilite port=control_status bundle=control
+    #pragma HLS INTERFACE mode=s_axilite port=control_initial_nonce bundle=control
+    #pragma HLS INTERFACE mode=s_axilite port=control_target_hash bundle=control
+    #pragma HLS INTERFACE mode=s_axilite port=control_result_nonce bundle=control
+    #pragma HLS INTERFACE mode=s_axilite port=control_hash_count_low bundle=control
+    #pragma HLS INTERFACE mode=s_axilite port=control_hash_count_high bundle=control
+    #pragma HLS INTERFACE mode=s_axilite port=return bundle=control
     
-    int input_offset = 0;
-    int output_offset = 0;
+    // Static state for persistent operation
+    static uint32_t miner_status = 0;  // 0=idle, 1=running, 2=found, 3=stopped
+    static bool mining_active = false;
+    static uint32_t found_nonce = 0;
+    static uint64_t hash_counter = 0;
     
-    // Process multiple blocks
-    STREAM_LOOP: for (int block = 0; block < num_blocks && block < 256; block++) {
-        #pragma HLS LOOP_TRIPCOUNT min=1 max=256
+    // Read control inputs
+    bool start_requested = (*control_start == 1);
+    bool stop_requested = (*control_stop == 1);
+    uint32_t initial_nonce = *control_initial_nonce;
+    uint32_t target_hash = *control_target_hash;
+    
+    // State machine
+    if (start_requested && miner_status == 0) {
+        miner_status = 1;
+        mining_active = true;
+        hash_counter = 0;
+        found_nonce = 0;
+        *control_start = 0;  // Clear start flag
+    } else if (stop_requested) {
+        miner_status = 3;
+        mining_active = false;
+        *control_stop = 0;  // Clear stop flag
+    }
+    
+    // Run mining pipeline
+    if (mining_active) {
+        bool solution_found;
+        uint32_t solution_nonce;
+        uint64_t current_hash_count;
         
-        sha3_ctx_hls_t ctx;
-        int current_length = block_lengths[block];
+        mining_pipeline(
+            initial_nonce,
+            target_hash,
+            true,
+            &solution_found,
+            &solution_nonce,
+            &current_hash_count
+        );
         
-        if (current_length > 0 && input_offset + current_length <= MAX_MESSAGE_SIZE) {
-            sha3_init_hls(&ctx, hash_length);
-            
-            // Process current block
-            uint8_t temp_block[MAX_MESSAGE_SIZE];
-            #pragma HLS ARRAY_PARTITION variable=temp_block cyclic factor=8
-            
-            COPY_LOOP: for (int i = 0; i < current_length; i++) {
-                #pragma HLS PIPELINE II=1
-                temp_block[i] = input_stream[input_offset + i];
-            }
-            
-            sha3_process_block_hls(&ctx, temp_block, current_length, 1);
-            
-            // Output hash
-            uint8_t temp_hash[MAX_OUTPUT_SIZE];
-            sha3_get_hash_hls(&ctx, temp_hash, hash_length);
-            
-            OUTPUT_COPY: for (int i = 0; i < hash_length; i++) {
-                #pragma HLS PIPELINE II=1
-                if (output_offset + i < MAX_OUTPUT_SIZE) {
-                    output_stream[output_offset + i] = temp_hash[i];
-                }
-            }
-            
-            input_offset += current_length;
-            output_offset += hash_length;
+        hash_counter = current_hash_count;
+        
+        if (solution_found) {
+            miner_status = 2;
+            mining_active = false;
+            found_nonce = solution_nonce;
+        }
+    }
+    
+    // Update control outputs
+    *control_status = miner_status;
+    *control_result_nonce = found_nonce;
+    *control_hash_count_low = (uint32_t)(hash_counter & 0xFFFFFFFFULL);
+    *control_hash_count_high = (uint32_t)((hash_counter >> 32) & 0xFFFFFFFFULL);
+    
+    // Auto-reset to idle when solution found or stopped
+    if (miner_status == 2 || miner_status == 3) {
+        // Wait for acknowledgment (start flag cleared) before going idle
+        if (*control_start == 0 && *control_stop == 0) {
+            miner_status = 0;
         }
     }
 }
-*/
 
+
+// High-performance batch mining 
+// Originally designed for axi-stream, but we couldn't get it working :(
+/*
+void sha3_miner_batch(
+    uint32_t initial_nonce,
+    uint32_t target_hash,
+    uint32_t max_iterations,
+    uint32_t *result_nonce,
+    bool *found_solution,
+    uint32_t *iterations_completed
+)
+{
+    #pragma HLS INTERFACE mode=s_axilite port=initial_nonce
+    #pragma HLS INTERFACE mode=s_axilite port=target_hash
+    #pragma HLS INTERFACE mode=s_axilite port=max_iterations
+    #pragma HLS INTERFACE mode=s_axilite port=result_nonce
+    #pragma HLS INTERFACE mode=s_axilite port=found_solution
+    #pragma HLS INTERFACE mode=s_axilite port=iterations_completed
+    #pragma HLS INTERFACE mode=s_axilite port=return
+    
+    *found_solution = false;
+    *result_nonce = 0;
+    
+    MINING_LOOP: for (uint32_t i = 0; i < max_iterations; i++) {
+        #pragma HLS PIPELINE II=25  // Adjust based on hash function latency
+        #pragma HLS LOOP_TRIPCOUNT min=1000 max=1000000
+        
+        uint32_t current_nonce = initial_nonce + i;
+        uint32_t hash_value;
+        bool hash_valid;
+        
+        hash_nonce(current_nonce, &hash_value, &hash_valid);
+        
+        // Check if solution found
+        if (hash_valid && compare_hash(hash_value, target_hash)) {
+            *found_solution = true;
+            *result_nonce = current_nonce;
+            *iterations_completed = i + 1;
+            return;
+        }
+    }
+    
+    *iterations_completed = max_iterations;
+}
+*/

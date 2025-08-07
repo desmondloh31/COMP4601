@@ -6,85 +6,82 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 // HLS-specific includes
 #ifdef __SYNTHESIS__
 #include "ap_int.h"
+#include "hls_stream.h"
 #endif
 
 #ifndef KECCAKF_ROUNDS
 #define KECCAKF_ROUNDS 24
+#define SHA3_256_OUTPUT_BYTES 32
+#define SHA3_256_RATE 136  // 200 - 2*32 = 136 bytes
+#define MAX_PIPELINE_DEPTH 8
 #endif
 
 #ifndef ROTL64
 #define ROTL64(x, y) (((x) << (y)) | ((x) >> (64 - (y))))
 #endif
 
-// Maximum supported message size (adjust based on your needs)
-#define MAX_MESSAGE_SIZE 512
-#define MAX_OUTPUT_SIZE 64
+// Miner control registers (AXI-Lite interface)
+typedef struct {
+    uint32_t start;           // Start mining (write 1 to start)
+    uint32_t stop;            // Stop mining (write 1 to stop)
+    uint32_t status;          // Status: 0=idle, 1=running, 2=found, 3=error
+    uint32_t initial_nonce;   // Starting nonce value
+    uint32_t target_hash;     // Target hash value (simplified to uint32 for demo)
+    uint32_t result_nonce;    // Found nonce (valid when status=2)
+    uint32_t hash_count_low;  // Hash counter (low 32 bits)
+    uint32_t hash_count_high; // Hash counter (high 32 bits)
+} miner_control_t;
 
 // HLS-friendly context structure - NO UNION
 typedef struct {
-    uint64_t state[25];          // 64-bit state words (replaces union)
-    uint8_t  buffer[200];        // Separate byte buffer for input processing
-    int      pt;                 // Buffer pointer
-    int      rsiz;              // Rate size
-    int      mdlen;             // Message digest length
-    int      buffer_valid;       // Indicates if buffer contains valid data
-} sha3_ctx_hls_t;
+    uint32_t nonce;         // 64-bit state words (replaces union)
+    uint32_t hash_value;       // Separate byte buffer for input processing
+    int      valid;             // Indicates if buffer contains valid data
+} hash_result_t;
 
 // Fixed-size message processing (HLS-friendly)
 void sha3_keccakf_hls(uint64_t state[25]);
 
+void hash_nonce(uint32_t nonce, uint32_t *hash_output, bool *valid);
 
-// Helper function to convert bytes to 64-bit words (explicit, no union)
-void bytes_to_words(const uint8_t bytes[200], uint64_t words[25]);
+bool compare_hash(uint32_t hash_value, uint32_t target);
 
+uint32_t increment_nonce(uint32_t current_nonce);
 
-// Helper function to convert 64-bit words to bytes (explicit, no union)
-void words_to_bytes(const uint64_t words[25], uint8_t bytes[200]);
-
-
-// HLS-friendly initialization
-void sha3_init_hls(sha3_ctx_hls_t *ctx, int mdlen);
-
-
-// Fixed-size message processing (avoids arbitrary-length arrays)
-void sha3_process_block_hls(
-    sha3_ctx_hls_t *ctx,
-    const uint8_t message_block[MAX_MESSAGE_SIZE],
-    int block_size,
-    int is_final_block
+void mining_pipeline(
+    uint32_t initial_nonce,
+    uint32_t target,
+    bool start_mining,
+    bool *found_solution,
+    uint32_t *solution_nonce,
+    uint64_t *hash_count
 );
 
-
-// Fixed-size output generation
-void sha3_get_hash_hls(
-    const sha3_ctx_hls_t *ctx,
-    uint8_t hash_output[MAX_OUTPUT_SIZE],
-    int output_length
+void sha3_miner_top(
+    // AXI-Lite control interface
+    uint32_t *control_start,
+    uint32_t *control_stop, 
+    uint32_t *control_status,
+    uint32_t *control_initial_nonce,
+    uint32_t *control_target_hash,
+    uint32_t *control_result_nonce,
+    uint32_t *control_hash_count_low,
+    uint32_t *control_hash_count_high
 );
 
-
-// Complete SHA-3 computation with fixed-size inputs/outputs
-void sha3_compute_hls(
-    const uint8_t input_message[MAX_MESSAGE_SIZE],
-    int message_length,
-    uint8_t output_hash[MAX_OUTPUT_SIZE],
-    int hash_length
+void sha3_miner_batch(
+    uint32_t initial_nonce,
+    uint32_t target_hash,
+    uint32_t max_iterations,
+    uint32_t *result_nonce,
+    bool *found_solution,
+    uint32_t *iterations_completed
 );
 
-
-// Streaming version for high throughput
-void sha3_streaming_hls(
-    const uint8_t input_stream[MAX_MESSAGE_SIZE],
-    uint8_t output_stream[MAX_OUTPUT_SIZE],
-    const int block_lengths[256],  // Fixed-size array of block lengths
-    int num_blocks,
-    int hash_length
-);
-
-
-#endif // SHA3_HLS_H
+#endif
 
