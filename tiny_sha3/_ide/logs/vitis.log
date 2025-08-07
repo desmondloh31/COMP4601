@@ -1,0 +1,18 @@
+16:50:33 INFO  : updated workspace path: /home/nana/Desktop/COMP4601/tiny_sha3
+16:50:33 INFO  : bash, -c, source /home/nana/tools/Xilinx_2024.2/Vitis/2024.2/tps/lnx64/lopper-1.1.0/env/bin/activate && python /home/nana/tools/Xilinx_2024.2/Vitis/2024.2/data/embeddedsw/scripts/pyesw//repo.py -st   /home/nana/tools/Xilinx_2024.2/Vitis/2024.2/data/embeddedsw && deactivate
+16:50:34 INFO  : Successfully created repository data at /home/nana/Desktop/COMP4601/tiny_sha3/_ide/.wsdata
+16:50:34 INFO  : bash, -c, source /home/nana/tools/Xilinx_2024.2/Vitis/2024.2/tps/lnx64/lopper-1.1.0/env/bin/activate && python /home/nana/tools/Xilinx_2024.2/Vitis/2024.2/data/embeddedsw/scripts/pyesw//get_template_data.py -d /tmp/rigel_lopper_nana16606073125758558998 -r /home/nana/Desktop/COMP4601/tiny_sha3/_ide/.wsdata/.repo.yaml && deactivate
+16:50:34 INFO  : Embedded Template List generated successfully
+17:10:54 INFO  : bash, -c, source /home/nana/tools/Xilinx_2024.2/Vitis/2024.2/tps/lnx64/lopper-1.1.0/env/bin/activate && python /home/nana/tools/Xilinx_2024.2/Vitis/2024.2/data/embeddedsw/scripts/pyesw//get_template_data.py -d /tmp/rigel_lopper_nana2520431506886021154 -r /home/nana/Desktop/COMP4601/tiny_sha3/_ide/.wsdata/.repo.yaml && deactivate
+17:10:55 INFO  : Embedded Template List generated successfully
+17:11:13 INFO  : Marking the target connection as default Local
+17:11:13 INFO  : Marking the target connection as default Linux Agent
+17:11:13 INFO  : Marking the target connection as default XRTServer
+17:11:13 INFO  : Marking the target connection as default LinuxEmulation
+17:11:13 INFO  : Marking the target connection as default QEMU
+17:11:15 INFO  : created .gitignore file for the project /home/nana/Desktop
+17:11:50 INFO  : updated workspace path: /home/nana/Desktop/COMP4601/tiny_sha3
+17:11:51 INFO  : Embedded Template List generated successfully
+17:11:51 INFO  : bash, -c, source /home/nana/tools/Xilinx_2024.2/Vitis/2024.2/tps/lnx64/lopper-1.1.0/env/bin/activate && python /home/nana/tools/Xilinx_2024.2/Vitis/2024.2/data/embeddedsw/scripts/pyesw//get_template_data.py -d /tmp/rigel_lopper_nana15659606838139352714 -r /home/nana/Desktop/COMP4601/tiny_sha3/_ide/.wsdata/.repo.yaml && deactivate
+17:11:51 INFO  : Embedded Template List generated successfully
+17:13:56 INFO  : created .gitignore file for the project /home/nana/Desktop/COMP4601/tiny_sha3/hls_component
