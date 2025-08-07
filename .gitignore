@@ -1,4 +1,4 @@
 /**/*.o
-/tiny_sha3/hls_component/*
+/tiny_sha3/hls_component/**
 
 
