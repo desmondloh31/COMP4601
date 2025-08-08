@@ -228,15 +228,17 @@ void sha3_miner_top(
     uint32_t *control_hash_count_high
 )
 {
-    #pragma HLS INTERFACE mode=s_axilite port=control_start bundle=control
-    #pragma HLS INTERFACE mode=s_axilite port=control_stop bundle=control
-    #pragma HLS INTERFACE mode=s_axilite port=control_status bundle=control
-    #pragma HLS INTERFACE mode=s_axilite port=control_initial_nonce bundle=control
-    #pragma HLS INTERFACE mode=s_axilite port=control_target_hash bundle=control
-    #pragma HLS INTERFACE mode=s_axilite port=control_result_nonce bundle=control
-    #pragma HLS INTERFACE mode=s_axilite port=control_hash_count_low bundle=control
-    #pragma HLS INTERFACE mode=s_axilite port=control_hash_count_high bundle=control
-    #pragma HLS INTERFACE mode=s_axilite port=return bundle=control
+
+    #pragma HLS INTERFACE mode=s_axilite port=control_start bundle=control offset=0x00
+    #pragma HLS INTERFACE mode=s_axilite port=control_stop bundle=control offset=0x04
+    #pragma HLS INTERFACE mode=s_axilite port=control_status bundle=control offset=0x08
+    #pragma HLS INTERFACE mode=s_axilite port=control_initial_nonce bundle=control offset=0x0C
+    #pragma HLS INTERFACE mode=s_axilite port=control_target_hash bundle=control offset=0x10
+    #pragma HLS INTERFACE mode=s_axilite port=control_result_nonce bundle=control offset=0x14
+    #pragma HLS INTERFACE mode=s_axilite port=control_hash_count_low bundle=control offset=0x18
+    #pragma HLS INTERFACE mode=s_axilite port=control_hash_count_high bundle=control offset=0x1C
+    // #pragma HLS INTERFACE mode=s_axilite port=return bundle=control
+
     
     // Static state for persistent operation
     static uint32_t miner_status = 0;  // 0=idle, 1=running, 2=found, 3=stopped
