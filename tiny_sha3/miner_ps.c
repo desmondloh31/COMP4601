@@ -5,14 +5,14 @@
 
 // Control register addresses (adjust for your memory map)
 #define MINER_BASE_ADDR 0xA0010000U
-#define REG_START       (MINER_BASE_ADDR + 0x00)
-#define REG_STOP        (MINER_BASE_ADDR + 0x04)
-#define REG_STATUS      (MINER_BASE_ADDR + 0x08)
-#define REG_NONCE       (MINER_BASE_ADDR + 0x0C)
-#define REG_TARGET      (MINER_BASE_ADDR + 0x10)
-#define REG_RESULT      (MINER_BASE_ADDR + 0x14)
-#define REG_HASH_COUNT_LOW  (MINER_BASE_ADDR + 0x18)
-#define REG_HASH_COUNT_HIGH (MINER_BASE_ADDR + 0x1C)
+#define REG_START       (MINER_BASE_ADDR + 0x28)  // control_start_i
+#define REG_STOP        (MINER_BASE_ADDR + 0x38)  // control_stop_i  
+#define REG_STATUS      (MINER_BASE_ADDR + 0x48)  // control_status
+#define REG_NONCE       (MINER_BASE_ADDR + 0x58)  // control_initial_nonce
+#define REG_TARGET      (MINER_BASE_ADDR + 0x10)  // control_target_hash
+#define REG_RESULT      (MINER_BASE_ADDR + 0x60)  // control_result_nonce
+#define REG_HASH_COUNT_LOW  (MINER_BASE_ADDR + 0x18)  // control_hash_count_low
+#define REG_HASH_COUNT_HIGH (MINER_BASE_ADDR + 0x70)  // control_hash_count_high
 
 // Mining timeout in seconds
 #define MINING_TIMEOUT_SECONDS 15

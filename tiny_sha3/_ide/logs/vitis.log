@@ -25,3 +25,12 @@
 02:12:44 INFO  : Successfully created repository data at /home/nana/Desktop/COMP4601/tiny_sha3/_ide/.wsdata
 02:12:44 INFO  : bash, -c, source /tools/Xilinx/Vitis/2024.2/tps/lnx64/lopper-1.1.0/env/bin/activate && python /tools/Xilinx/Vitis/2024.2/data/embeddedsw/scripts/pyesw//get_template_data.py -d /tmp/rigel_lopper_nana17313993364350693603 -r /home/nana/Desktop/COMP4601/tiny_sha3/_ide/.wsdata/.repo.yaml && deactivate
 02:12:44 INFO  : Embedded Template List generated successfully
+15:44:36 INFO  : Terminating Vitis C++ Server
+15:44:36 INFO  : Vitis C++ Server terminated
+15:45:05 INFO  : updated workspace path: /home/nana/Desktop/COMP4601/tiny_sha3
+15:45:05 INFO  : created .gitignore file for the project /home/nana/Desktop/COMP4601/tiny_sha3
+15:45:06 INFO  : Successfully created repository data at /tmp/rigel_lopper_nana768686299987349616
+15:45:06 INFO  : bash, -c, source /tools/Xilinx/Vitis/2024.2/tps/lnx64/lopper-1.1.0/env/bin/activate && python /tools/Xilinx/Vitis/2024.2/data/embeddedsw/scripts/pyesw//get_template_data.py -d /tmp/rigel_lopper_nana13635163665776058878 -r /tmp/rigel_lopper_nana768686299987349616/.repo.yaml && deactivate
+15:45:06 INFO  : Embedded Template List generated successfully
+15:45:06 INFO  : bash, -c, source /tools/Xilinx/Vitis/2024.2/tps/lnx64/lopper-1.1.0/env/bin/activate && python /tools/Xilinx/Vitis/2024.2/data/embeddedsw/scripts/pyesw//get_template_data.py -d /tmp/rigel_lopper_nana17919150191981142987 -r /home/nana/Desktop/COMP4601/tiny_sha3/_ide/.wsdata/.repo.yaml && deactivate
+15:45:06 INFO  : Embedded Template List generated successfully
