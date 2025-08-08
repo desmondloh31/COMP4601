@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 // Control register addresses (adjust for your memory map)
-#define MINER_BASE_ADDR 0x43C00000
+#define MINER_BASE_ADDR 0xA0010000U
 #define REG_START       (MINER_BASE_ADDR + 0x00)
 #define REG_STOP        (MINER_BASE_ADDR + 0x04)
 #define REG_STATUS      (MINER_BASE_ADDR + 0x08)
