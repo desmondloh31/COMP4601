@@ -7,3 +7,27 @@ client.set_workspace(path="tiny_sha3")
 comp = client.get_component(name="hls_component")
 comp.run(operation="IMPLEMENTATION")
 
+comp.run(operation="C_SIMULATION")
+
+comp.run(operation="C_SIMULATION")
+
+comp.run(operation="C_SIMULATION")
+
+comp.run(operation="C_SIMULATION")
+
+comp.run(operation="C_SIMULATION")
+
+comp.run(operation="C_SIMULATION")
+
+comp.run(operation="C_SIMULATION")
+
+comp.run(operation="C_SIMULATION")
+
+comp.run(operation="C_SIMULATION")
+
+comp.run(operation="C_SIMULATION")
+
+comp.run(operation="C_SIMULATION")
+
+comp.run(operation="C_SIMULATION")
+
