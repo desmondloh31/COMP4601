@@ -237,7 +237,7 @@ void sha3_miner_top(
     #pragma HLS INTERFACE mode=s_axilite port=control_result_nonce bundle=control offset=0x14
     #pragma HLS INTERFACE mode=s_axilite port=control_hash_count_low bundle=control offset=0x18
     #pragma HLS INTERFACE mode=s_axilite port=control_hash_count_high bundle=control offset=0x1C
-    // #pragma HLS INTERFACE mode=s_axilite port=return bundle=control
+    #pragma HLS INTERFACE mode=s_axilite port=return bundle=control
 
     
     // Static state for persistent operation

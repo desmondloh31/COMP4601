@@ -1,33 +1,8 @@
-# 2025-08-08T15:46:08.915658
+# 2025-08-10T01:09:30.890031100
 import vitis
 
 client = vitis.create_client()
 client.set_workspace(path="tiny_sha3")
 
-comp = client.get_component(name="hls_component")
-comp.run(operation="IMPLEMENTATION")
-
-comp.run(operation="C_SIMULATION")
-
-comp.run(operation="C_SIMULATION")
-
-comp.run(operation="C_SIMULATION")
-
-comp.run(operation="C_SIMULATION")
-
-comp.run(operation="C_SIMULATION")
-
-comp.run(operation="C_SIMULATION")
-
-comp.run(operation="C_SIMULATION")
-
-comp.run(operation="C_SIMULATION")
-
-comp.run(operation="C_SIMULATION")
-
-comp.run(operation="C_SIMULATION")
-
-comp.run(operation="C_SIMULATION")
-
-comp.run(operation="C_SIMULATION")
+vitis.dispose()
 

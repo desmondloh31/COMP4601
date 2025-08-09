@@ -1,8 +1,7 @@
 {
-  "workspaceRoot": "/home/nana/Desktop/COMP4601/tiny_sha3",
+  "workspaceRoot": "D:\\comp4601\\COMP4601\\tiny_sha3",
   "mapping": {
     "sha3_hls_tb.cpp": "hls_component",
-    "sha3_hls.h": "hls_component",
     "sha3_hls.cpp": "hls_component"
   }
 }

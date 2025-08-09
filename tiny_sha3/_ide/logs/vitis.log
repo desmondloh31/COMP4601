@@ -34,3 +34,81 @@
 15:45:06 INFO  : Embedded Template List generated successfully
 15:45:06 INFO  : bash, -c, source /tools/Xilinx/Vitis/2024.2/tps/lnx64/lopper-1.1.0/env/bin/activate && python /tools/Xilinx/Vitis/2024.2/data/embeddedsw/scripts/pyesw//get_template_data.py -d /tmp/rigel_lopper_nana17919150191981142987 -r /home/nana/Desktop/COMP4601/tiny_sha3/_ide/.wsdata/.repo.yaml && deactivate
 15:45:06 INFO  : Embedded Template List generated successfully
+23:13:24 INFO  : updated workspace path: D:\comp4601\COMP4601\tiny_sha3
+23:13:24 INFO  : created .gitignore file for the project D:\comp4601\COMP4601\tiny_sha3
+23:13:24 INFO  : created .gitignore file for the project D:\comp4601\COMP4601\tiny_sha3\hls_component
+23:13:25 INFO  : Successfully created repository data at C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack5372397798867487100
+23:13:25 INFO  : cmd.exe, /C, F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\activate.bat && python F:\Xilinx24.2\Vitis\2024.2\data\embeddedsw\scripts\pyesw\\get_template_data.py -d C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack13948879448635225064 -r C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack5372397798867487100\.repo.yaml && F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\deactivate.bat
+23:13:25 INFO  : Embedded Template List generated successfully
+23:13:25 INFO  : cmd.exe, /C, F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\activate.bat && python F:\Xilinx24.2\Vitis\2024.2\data\embeddedsw\scripts\pyesw\\repo.py -st   F:\Xilinx24.2\Vitis\2024.2\data\embeddedsw && F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\deactivate.bat
+23:13:26 INFO  : Successfully created repository data at D:\comp4601\COMP4601\tiny_sha3/_ide\.wsdata
+23:13:26 INFO  : cmd.exe, /C, F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\activate.bat && python F:\Xilinx24.2\Vitis\2024.2\data\embeddedsw\scripts\pyesw\\get_template_data.py -d C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack7291156902886342071 -r D:\comp4601\COMP4601\tiny_sha3\_ide\.wsdata\.repo.yaml && F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\deactivate.bat
+23:13:26 INFO  : Embedded Template List generated successfully
+23:22:52 INFO  : connection terminated
+23:22:52 INFO  : connection terminated
+23:22:52 INFO  : scheduling shutdown timer for 2 seconds ...
+23:22:54 INFO  : Terminating Vitis C++ Server
+23:22:54 INFO  : Vitis C++ Server terminated
+23:24:16 INFO  : updated workspace path: D:\comp4601\COMP4601\tiny_sha3
+23:24:16 INFO  : created .gitignore file for the project D:\comp4601\COMP4601\tiny_sha3
+23:24:17 INFO  : Successfully created repository data at C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack4367286505436746158
+23:24:17 INFO  : cmd.exe, /C, F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\activate.bat && python F:\Xilinx24.2\Vitis\2024.2\data\embeddedsw\scripts\pyesw\\get_template_data.py -d C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack1003351661496190009 -r C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack4367286505436746158\.repo.yaml && F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\deactivate.bat
+23:24:17 INFO  : Embedded Template List generated successfully
+23:24:17 INFO  : cmd.exe, /C, F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\activate.bat && python F:\Xilinx24.2\Vitis\2024.2\data\embeddedsw\scripts\pyesw\\get_template_data.py -d C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack910850467361755375 -r D:\comp4601\COMP4601\tiny_sha3\_ide\.wsdata\.repo.yaml && F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\deactivate.bat
+23:24:17 INFO  : Embedded Template List generated successfully
+23:31:19 INFO  : connection terminated
+23:31:19 INFO  : connection terminated
+23:31:19 INFO  : scheduling shutdown timer for 2 seconds ...
+23:31:21 INFO  : Terminating Vitis C++ Server
+23:31:21 INFO  : Vitis C++ Server terminated
+23:40:46 INFO  : updated workspace path: D:\comp4601\COMP4601\tiny_sha3
+23:40:46 INFO  : created .gitignore file for the project D:\comp4601\COMP4601\tiny_sha3
+23:40:47 INFO  : Successfully created repository data at C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack18047256739371844793
+23:40:47 INFO  : cmd.exe, /C, F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\activate.bat && python F:\Xilinx24.2\Vitis\2024.2\data\embeddedsw\scripts\pyesw\\get_template_data.py -d C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack11999437421969047938 -r C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack18047256739371844793\.repo.yaml && F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\deactivate.bat
+23:40:47 INFO  : Embedded Template List generated successfully
+23:40:47 INFO  : cmd.exe, /C, F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\activate.bat && python F:\Xilinx24.2\Vitis\2024.2\data\embeddedsw\scripts\pyesw\\get_template_data.py -d C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack4160247086690500861 -r D:\comp4601\COMP4601\tiny_sha3\_ide\.wsdata\.repo.yaml && F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\deactivate.bat
+23:40:48 INFO  : Embedded Template List generated successfully
+23:42:22 INFO  : connection terminated
+23:42:22 INFO  : connection terminated
+23:42:22 INFO  : scheduling shutdown timer for 2 seconds ...
+23:42:24 INFO  : Terminating Vitis C++ Server
+23:42:24 INFO  : Vitis C++ Server terminated
+23:42:43 INFO  : updated workspace path: D:\comp4601\COMP4601\tiny_sha3
+23:42:43 INFO  : created .gitignore file for the project D:\comp4601\COMP4601\tiny_sha3
+23:42:44 INFO  : connection terminated
+23:42:44 INFO  : Successfully created repository data at C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack9063145858184600136
+23:42:44 INFO  : cmd.exe, /C, F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\activate.bat && python F:\Xilinx24.2\Vitis\2024.2\data\embeddedsw\scripts\pyesw\\get_template_data.py -d C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack2813129885192479229 -r C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack9063145858184600136\.repo.yaml && F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\deactivate.bat
+23:42:44 INFO  : Embedded Template List generated successfully
+23:42:44 INFO  : cmd.exe, /C, F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\activate.bat && python F:\Xilinx24.2\Vitis\2024.2\data\embeddedsw\scripts\pyesw\\get_template_data.py -d C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack5096663759879896897 -r D:\comp4601\COMP4601\tiny_sha3\_ide\.wsdata\.repo.yaml && F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\deactivate.bat
+23:42:44 INFO  : Embedded Template List generated successfully
+23:55:39 INFO  : connection terminated
+23:55:39 INFO  : connection terminated
+23:55:39 INFO  : scheduling shutdown timer for 2 seconds ...
+23:55:41 INFO  : Terminating Vitis C++ Server
+23:55:41 INFO  : Vitis C++ Server terminated
+00:32:03 INFO  : updated workspace path: D:\comp4601\COMP4601\tiny_sha3
+00:32:03 INFO  : created .gitignore file for the project D:\comp4601\COMP4601\tiny_sha3
+00:32:03 INFO  : Successfully created repository data at C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack13200945716096740328
+00:32:03 INFO  : cmd.exe, /C, F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\activate.bat && python F:\Xilinx24.2\Vitis\2024.2\data\embeddedsw\scripts\pyesw\\get_template_data.py -d C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack12166935136031372719 -r C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack13200945716096740328\.repo.yaml && F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\deactivate.bat
+00:32:04 INFO  : Embedded Template List generated successfully
+00:32:04 INFO  : cmd.exe, /C, F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\activate.bat && python F:\Xilinx24.2\Vitis\2024.2\data\embeddedsw\scripts\pyesw\\get_template_data.py -d C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack9930254269804322661 -r D:\comp4601\COMP4601\tiny_sha3\_ide\.wsdata\.repo.yaml && F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\deactivate.bat
+00:32:04 INFO  : Embedded Template List generated successfully
+00:32:07 INFO  : connection terminated
+00:41:20 INFO  : connection terminated
+00:41:20 INFO  : connection terminated
+00:41:20 INFO  : scheduling shutdown timer for 2 seconds ...
+00:41:22 INFO  : Terminating Vitis C++ Server
+00:41:22 INFO  : Vitis C++ Server terminated
+00:51:20 INFO  : updated workspace path: D:\comp4601\COMP4601\tiny_sha3
+00:51:20 INFO  : created .gitignore file for the project D:\comp4601\COMP4601\tiny_sha3
+00:51:21 INFO  : Successfully created repository data at C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack5924021245039415189
+00:51:21 INFO  : cmd.exe, /C, F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\activate.bat && python F:\Xilinx24.2\Vitis\2024.2\data\embeddedsw\scripts\pyesw\\get_template_data.py -d C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack6128085906541234224 -r C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack5924021245039415189\.repo.yaml && F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\deactivate.bat
+00:51:21 INFO  : Embedded Template List generated successfully
+00:51:21 INFO  : cmd.exe, /C, F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\activate.bat && python F:\Xilinx24.2\Vitis\2024.2\data\embeddedsw\scripts\pyesw\\get_template_data.py -d C:\Users\Jack\AppData\Local\Temp\rigel_lopper_Jack17025311789945413867 -r D:\comp4601\COMP4601\tiny_sha3\_ide\.wsdata\.repo.yaml && F:\Xilinx24.2\Vitis\2024.2\tps\win64\lopper-1.1.0\env\Scripts\deactivate.bat
+00:51:21 INFO  : Embedded Template List generated successfully
+00:51:24 INFO  : connection terminated
+01:09:28 INFO  : connection terminated
+01:09:28 INFO  : connection terminated
+01:09:28 INFO  : scheduling shutdown timer for 2 seconds ...
+01:09:30 INFO  : Terminating Vitis C++ Server
+01:09:30 INFO  : Vitis C++ Server terminated

@@ -1,5 +1,5 @@
 -- ==============================================================
--- Vitis HLS - High-Level Synthesis from C, C++ and OpenCL v2020.1 (64-bit)
+-- Vitis HLS - High-Level Synthesis from C, C++ and OpenCL v2024.2 (64-bit)
 -- Tool Version Limit: 2024.11
 -- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
 -- Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
@@ -35,6 +35,9 @@ port (
     RVALID                :out  STD_LOGIC;
     RREADY                :in   STD_LOGIC;
     interrupt             :out  STD_LOGIC;
+    control_target_hash   :out  STD_LOGIC_VECTOR(31 downto 0);
+    control_hash_count_low :in   STD_LOGIC_VECTOR(31 downto 0);
+    control_hash_count_low_ap_vld :in   STD_LOGIC;
     control_start_i       :out  STD_LOGIC_VECTOR(31 downto 0);
     control_start_o       :in   STD_LOGIC_VECTOR(31 downto 0);
     control_start_o_ap_vld :in   STD_LOGIC;
@@ -44,11 +47,8 @@ port (
     control_status        :in   STD_LOGIC_VECTOR(31 downto 0);
     control_status_ap_vld :in   STD_LOGIC;
     control_initial_nonce :out  STD_LOGIC_VECTOR(31 downto 0);
-    control_target_hash   :out  STD_LOGIC_VECTOR(31 downto 0);
     control_result_nonce  :in   STD_LOGIC_VECTOR(31 downto 0);
     control_result_nonce_ap_vld :in   STD_LOGIC;
-    control_hash_count_low :in   STD_LOGIC_VECTOR(31 downto 0);
-    control_hash_count_low_ap_vld :in   STD_LOGIC;
     control_hash_count_high :in   STD_LOGIC_VECTOR(31 downto 0);
     control_hash_count_high_ap_vld :in   STD_LOGIC;
     ap_start              :out  STD_LOGIC;
@@ -80,42 +80,42 @@ end entity sha3_miner_top_control_s_axi;
 --        bit 0 - ap_done (Read/TOW)
 --        bit 1 - ap_ready (Read/TOW)
 --        others - reserved
--- 0x10 : Data signal of control_start_i
---        bit 31~0 - control_start_i[31:0] (Read/Write)
+-- 0x10 : Data signal of control_target_hash
+--        bit 31~0 - control_target_hash[31:0] (Read/Write)
 -- 0x14 : reserved
--- 0x18 : Data signal of control_start_o
+-- 0x18 : Data signal of control_hash_count_low
+--        bit 31~0 - control_hash_count_low[31:0] (Read)
+-- 0x1c : Control signal of control_hash_count_low
+--        bit 0  - control_hash_count_low_ap_vld (Read/COR)
+--        others - reserved
+-- 0x28 : Data signal of control_start_i
+--        bit 31~0 - control_start_i[31:0] (Read/Write)
+-- 0x2c : reserved
+-- 0x30 : Data signal of control_start_o
 --        bit 31~0 - control_start_o[31:0] (Read)
--- 0x1c : Control signal of control_start_o
+-- 0x34 : Control signal of control_start_o
 --        bit 0  - control_start_o_ap_vld (Read/COR)
 --        others - reserved
--- 0x20 : Data signal of control_stop_i
+-- 0x38 : Data signal of control_stop_i
 --        bit 31~0 - control_stop_i[31:0] (Read/Write)
--- 0x24 : reserved
--- 0x28 : Data signal of control_stop_o
+-- 0x3c : reserved
+-- 0x40 : Data signal of control_stop_o
 --        bit 31~0 - control_stop_o[31:0] (Read)
--- 0x2c : Control signal of control_stop_o
+-- 0x44 : Control signal of control_stop_o
 --        bit 0  - control_stop_o_ap_vld (Read/COR)
 --        others - reserved
--- 0x30 : Data signal of control_status
+-- 0x48 : Data signal of control_status
 --        bit 31~0 - control_status[31:0] (Read)
--- 0x34 : Control signal of control_status
+-- 0x4c : Control signal of control_status
 --        bit 0  - control_status_ap_vld (Read/COR)
 --        others - reserved
--- 0x40 : Data signal of control_initial_nonce
+-- 0x58 : Data signal of control_initial_nonce
 --        bit 31~0 - control_initial_nonce[31:0] (Read/Write)
--- 0x44 : reserved
--- 0x48 : Data signal of control_target_hash
---        bit 31~0 - control_target_hash[31:0] (Read/Write)
--- 0x4c : reserved
--- 0x50 : Data signal of control_result_nonce
+-- 0x5c : reserved
+-- 0x60 : Data signal of control_result_nonce
 --        bit 31~0 - control_result_nonce[31:0] (Read)
--- 0x54 : Control signal of control_result_nonce
+-- 0x64 : Control signal of control_result_nonce
 --        bit 0  - control_result_nonce_ap_vld (Read/COR)
---        others - reserved
--- 0x60 : Data signal of control_hash_count_low
---        bit 31~0 - control_hash_count_low[31:0] (Read)
--- 0x64 : Control signal of control_hash_count_low
---        bit 0  - control_hash_count_low_ap_vld (Read/COR)
 --        others - reserved
 -- 0x70 : Data signal of control_hash_count_high
 --        bit 31~0 - control_hash_count_high[31:0] (Read)
@@ -133,24 +133,24 @@ architecture behave of sha3_miner_top_control_s_axi is
     constant ADDR_GIE                            : INTEGER := 16#04#;
     constant ADDR_IER                            : INTEGER := 16#08#;
     constant ADDR_ISR                            : INTEGER := 16#0c#;
-    constant ADDR_CONTROL_START_I_DATA_0         : INTEGER := 16#10#;
-    constant ADDR_CONTROL_START_I_CTRL           : INTEGER := 16#14#;
-    constant ADDR_CONTROL_START_O_DATA_0         : INTEGER := 16#18#;
-    constant ADDR_CONTROL_START_O_CTRL           : INTEGER := 16#1c#;
-    constant ADDR_CONTROL_STOP_I_DATA_0          : INTEGER := 16#20#;
-    constant ADDR_CONTROL_STOP_I_CTRL            : INTEGER := 16#24#;
-    constant ADDR_CONTROL_STOP_O_DATA_0          : INTEGER := 16#28#;
-    constant ADDR_CONTROL_STOP_O_CTRL            : INTEGER := 16#2c#;
-    constant ADDR_CONTROL_STATUS_DATA_0          : INTEGER := 16#30#;
-    constant ADDR_CONTROL_STATUS_CTRL            : INTEGER := 16#34#;
-    constant ADDR_CONTROL_INITIAL_NONCE_DATA_0   : INTEGER := 16#40#;
-    constant ADDR_CONTROL_INITIAL_NONCE_CTRL     : INTEGER := 16#44#;
-    constant ADDR_CONTROL_TARGET_HASH_DATA_0     : INTEGER := 16#48#;
-    constant ADDR_CONTROL_TARGET_HASH_CTRL       : INTEGER := 16#4c#;
-    constant ADDR_CONTROL_RESULT_NONCE_DATA_0    : INTEGER := 16#50#;
-    constant ADDR_CONTROL_RESULT_NONCE_CTRL      : INTEGER := 16#54#;
-    constant ADDR_CONTROL_HASH_COUNT_LOW_DATA_0  : INTEGER := 16#60#;
-    constant ADDR_CONTROL_HASH_COUNT_LOW_CTRL    : INTEGER := 16#64#;
+    constant ADDR_CONTROL_TARGET_HASH_DATA_0     : INTEGER := 16#10#;
+    constant ADDR_CONTROL_TARGET_HASH_CTRL       : INTEGER := 16#14#;
+    constant ADDR_CONTROL_HASH_COUNT_LOW_DATA_0  : INTEGER := 16#18#;
+    constant ADDR_CONTROL_HASH_COUNT_LOW_CTRL    : INTEGER := 16#1c#;
+    constant ADDR_CONTROL_START_I_DATA_0         : INTEGER := 16#28#;
+    constant ADDR_CONTROL_START_I_CTRL           : INTEGER := 16#2c#;
+    constant ADDR_CONTROL_START_O_DATA_0         : INTEGER := 16#30#;
+    constant ADDR_CONTROL_START_O_CTRL           : INTEGER := 16#34#;
+    constant ADDR_CONTROL_STOP_I_DATA_0          : INTEGER := 16#38#;
+    constant ADDR_CONTROL_STOP_I_CTRL            : INTEGER := 16#3c#;
+    constant ADDR_CONTROL_STOP_O_DATA_0          : INTEGER := 16#40#;
+    constant ADDR_CONTROL_STOP_O_CTRL            : INTEGER := 16#44#;
+    constant ADDR_CONTROL_STATUS_DATA_0          : INTEGER := 16#48#;
+    constant ADDR_CONTROL_STATUS_CTRL            : INTEGER := 16#4c#;
+    constant ADDR_CONTROL_INITIAL_NONCE_DATA_0   : INTEGER := 16#58#;
+    constant ADDR_CONTROL_INITIAL_NONCE_CTRL     : INTEGER := 16#5c#;
+    constant ADDR_CONTROL_RESULT_NONCE_DATA_0    : INTEGER := 16#60#;
+    constant ADDR_CONTROL_RESULT_NONCE_CTRL      : INTEGER := 16#64#;
     constant ADDR_CONTROL_HASH_COUNT_HIGH_DATA_0 : INTEGER := 16#70#;
     constant ADDR_CONTROL_HASH_COUNT_HIGH_CTRL   : INTEGER := 16#74#;
     constant ADDR_BITS         : INTEGER := 7;
@@ -181,6 +181,9 @@ architecture behave of sha3_miner_top_control_s_axi is
     signal int_gie             : STD_LOGIC := '0';
     signal int_ier             : UNSIGNED(1 downto 0) := (others => '0');
     signal int_isr             : UNSIGNED(1 downto 0) := (others => '0');
+    signal int_control_target_hash : UNSIGNED(31 downto 0) := (others => '0');
+    signal int_control_hash_count_low_ap_vld : STD_LOGIC;
+    signal int_control_hash_count_low : UNSIGNED(31 downto 0) := (others => '0');
     signal int_control_start_i : UNSIGNED(31 downto 0) := (others => '0');
     signal int_control_start_o_ap_vld : STD_LOGIC;
     signal int_control_start_o : UNSIGNED(31 downto 0) := (others => '0');
@@ -190,11 +193,8 @@ architecture behave of sha3_miner_top_control_s_axi is
     signal int_control_status_ap_vld : STD_LOGIC;
     signal int_control_status  : UNSIGNED(31 downto 0) := (others => '0');
     signal int_control_initial_nonce : UNSIGNED(31 downto 0) := (others => '0');
-    signal int_control_target_hash : UNSIGNED(31 downto 0) := (others => '0');
     signal int_control_result_nonce_ap_vld : STD_LOGIC;
     signal int_control_result_nonce : UNSIGNED(31 downto 0) := (others => '0');
-    signal int_control_hash_count_low_ap_vld : STD_LOGIC;
-    signal int_control_hash_count_low : UNSIGNED(31 downto 0) := (others => '0');
     signal int_control_hash_count_high_ap_vld : STD_LOGIC;
     signal int_control_hash_count_high : UNSIGNED(31 downto 0) := (others => '0');
 
@@ -325,6 +325,12 @@ begin
                         rdata_data(1 downto 0) <= int_ier;
                     when ADDR_ISR =>
                         rdata_data(1 downto 0) <= int_isr;
+                    when ADDR_CONTROL_TARGET_HASH_DATA_0 =>
+                        rdata_data <= RESIZE(int_control_target_hash(31 downto 0), 32);
+                    when ADDR_CONTROL_HASH_COUNT_LOW_DATA_0 =>
+                        rdata_data <= RESIZE(int_control_hash_count_low(31 downto 0), 32);
+                    when ADDR_CONTROL_HASH_COUNT_LOW_CTRL =>
+                        rdata_data(0) <= int_control_hash_count_low_ap_vld;
                     when ADDR_CONTROL_START_I_DATA_0 =>
                         rdata_data <= RESIZE(int_control_start_i(31 downto 0), 32);
                     when ADDR_CONTROL_START_O_DATA_0 =>
@@ -343,16 +349,10 @@ begin
                         rdata_data(0) <= int_control_status_ap_vld;
                     when ADDR_CONTROL_INITIAL_NONCE_DATA_0 =>
                         rdata_data <= RESIZE(int_control_initial_nonce(31 downto 0), 32);
-                    when ADDR_CONTROL_TARGET_HASH_DATA_0 =>
-                        rdata_data <= RESIZE(int_control_target_hash(31 downto 0), 32);
                     when ADDR_CONTROL_RESULT_NONCE_DATA_0 =>
                         rdata_data <= RESIZE(int_control_result_nonce(31 downto 0), 32);
                     when ADDR_CONTROL_RESULT_NONCE_CTRL =>
                         rdata_data(0) <= int_control_result_nonce_ap_vld;
-                    when ADDR_CONTROL_HASH_COUNT_LOW_DATA_0 =>
-                        rdata_data <= RESIZE(int_control_hash_count_low(31 downto 0), 32);
-                    when ADDR_CONTROL_HASH_COUNT_LOW_CTRL =>
-                        rdata_data(0) <= int_control_hash_count_low_ap_vld;
                     when ADDR_CONTROL_HASH_COUNT_HIGH_DATA_0 =>
                         rdata_data <= RESIZE(int_control_hash_count_high(31 downto 0), 32);
                     when ADDR_CONTROL_HASH_COUNT_HIGH_CTRL =>
@@ -371,10 +371,10 @@ begin
     task_ap_done         <= (ap_done and not auto_restart_status) or auto_restart_done;
     task_ap_ready        <= ap_ready and not int_auto_restart;
     auto_restart_done    <= auto_restart_status and (ap_idle and not int_ap_idle);
+    control_target_hash  <= STD_LOGIC_VECTOR(int_control_target_hash);
     control_start_i      <= STD_LOGIC_VECTOR(int_control_start_i);
     control_stop_i       <= STD_LOGIC_VECTOR(int_control_stop_i);
     control_initial_nonce <= STD_LOGIC_VECTOR(int_control_initial_nonce);
-    control_target_hash  <= STD_LOGIC_VECTOR(int_control_target_hash);
 
     process (ACLK)
     begin
@@ -550,6 +550,47 @@ begin
     begin
         if (ACLK'event and ACLK = '1') then
             if (ARESET = '1') then
+                int_control_target_hash(31 downto 0) <= (others => '0');
+            elsif (ACLK_EN = '1') then
+                if (w_hs = '1' and waddr = ADDR_CONTROL_TARGET_HASH_DATA_0) then
+                    int_control_target_hash(31 downto 0) <= (UNSIGNED(WDATA(31 downto 0)) and wmask(31 downto 0)) or ((not wmask(31 downto 0)) and int_control_target_hash(31 downto 0));
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
+                int_control_hash_count_low <= (others => '0');
+            elsif (ACLK_EN = '1') then
+                if (control_hash_count_low_ap_vld = '1') then
+                    int_control_hash_count_low <= UNSIGNED(control_hash_count_low);
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
+                int_control_hash_count_low_ap_vld <= '0';
+            elsif (ACLK_EN = '1') then
+                if (control_hash_count_low_ap_vld = '1') then
+                    int_control_hash_count_low_ap_vld <= '1';
+                elsif (ar_hs = '1' and raddr = ADDR_CONTROL_HASH_COUNT_LOW_CTRL) then
+                    int_control_hash_count_low_ap_vld <= '0'; -- clear on read
+                end if;
+            end if;
+        end if;
+    end process;
+
+    process (ACLK)
+    begin
+        if (ACLK'event and ACLK = '1') then
+            if (ARESET = '1') then
                 int_control_start_i(31 downto 0) <= (others => '0');
             elsif (ACLK_EN = '1') then
                 if (w_hs = '1' and waddr = ADDR_CONTROL_START_I_DATA_0) then
@@ -673,19 +714,6 @@ begin
     begin
         if (ACLK'event and ACLK = '1') then
             if (ARESET = '1') then
-                int_control_target_hash(31 downto 0) <= (others => '0');
-            elsif (ACLK_EN = '1') then
-                if (w_hs = '1' and waddr = ADDR_CONTROL_TARGET_HASH_DATA_0) then
-                    int_control_target_hash(31 downto 0) <= (UNSIGNED(WDATA(31 downto 0)) and wmask(31 downto 0)) or ((not wmask(31 downto 0)) and int_control_target_hash(31 downto 0));
-                end if;
-            end if;
-        end if;
-    end process;
-
-    process (ACLK)
-    begin
-        if (ACLK'event and ACLK = '1') then
-            if (ARESET = '1') then
                 int_control_result_nonce <= (others => '0');
             elsif (ACLK_EN = '1') then
                 if (control_result_nonce_ap_vld = '1') then
@@ -705,34 +733,6 @@ begin
                     int_control_result_nonce_ap_vld <= '1';
                 elsif (ar_hs = '1' and raddr = ADDR_CONTROL_RESULT_NONCE_CTRL) then
                     int_control_result_nonce_ap_vld <= '0'; -- clear on read
-                end if;
-            end if;
-        end if;
-    end process;
-
-    process (ACLK)
-    begin
-        if (ACLK'event and ACLK = '1') then
-            if (ARESET = '1') then
-                int_control_hash_count_low <= (others => '0');
-            elsif (ACLK_EN = '1') then
-                if (control_hash_count_low_ap_vld = '1') then
-                    int_control_hash_count_low <= UNSIGNED(control_hash_count_low);
-                end if;
-            end if;
-        end if;
-    end process;
-
-    process (ACLK)
-    begin
-        if (ACLK'event and ACLK = '1') then
-            if (ARESET = '1') then
-                int_control_hash_count_low_ap_vld <= '0';
-            elsif (ACLK_EN = '1') then
-                if (control_hash_count_low_ap_vld = '1') then
-                    int_control_hash_count_low_ap_vld <= '1';
-                elsif (ar_hs = '1' and raddr = ADDR_CONTROL_HASH_COUNT_LOW_CTRL) then
-                    int_control_hash_count_low_ap_vld <= '0'; -- clear on read
                 end if;
             end if;
         end if;
