@@ -20,6 +20,15 @@
 #define REG_HASH_COUNT_LOW_OFFSET  0x18  // control_hash_count_low
 #define REG_HASH_COUNT_HIGH_OFFSET 0x70  // control_hash_count_high
 
+// +++ ADD +++
+#define REG_CTRL_OFFSET   0x00
+#define CTRL_AP_START     (1u<<0)
+#define CTRL_AP_DONE      (1u<<1)
+#define CTRL_AP_IDLE      (1u<<2)
+#define CTRL_AP_READY     (1u<<3)
+#define CTRL_AUTO_RESTART (1u<<7)
+// --- ADD ---
+
 // Mining timeout in seconds
 #define MINING_TIMEOUT_SECONDS 15
 
@@ -87,32 +96,65 @@ void start_mining(uint32_t initial_nonce, uint32_t target) {
     WRITE_REG(REG_STOP_OFFSET, 1);
     usleep(1000);  // 1ms delay to ensure stop is processed
     WRITE_REG(REG_STOP_OFFSET, 0);
-    
-    // Set parameters and start
-    WRITE_REG(REG_NONCE_OFFSET, initial_nonce);
+
+    // +++ ADD +++ //
+    WRITE_REG(REG_NONCE_OFFSET,  initial_nonce);
     WRITE_REG(REG_TARGET_OFFSET, target);
+
+    WRITE_REG(0x04, 0x0);
+    WRITE_REG(0x0C, 0x1);
+
+    WRITE_REG(REG_CTRL_OFFSET, CTRL_AP_START | CTRL_AUTO_RESTART);
+
     WRITE_REG(REG_START_OFFSET, 1);
+    // --- ADD --- //
+    
+    // // Set parameters and start
+    // WRITE_REG(REG_NONCE_OFFSET, initial_nonce);
+    // WRITE_REG(REG_TARGET_OFFSET, target);
+    // WRITE_REG(REG_START_OFFSET, 1);
 }
 
-void stop_mining() {
+// void stop_mining() {
+//     if (!miner_regs) return;
+    
+//     printf("Stopping mining...\n");
+//     WRITE_REG(REG_STOP_OFFSET, 1);
+    
+//     // Wait for miner to acknowledge stop
+//     int timeout_counter = 1000;  // Prevent infinite wait
+//     while (timeout_counter-- > 0) {
+//         uint32_t status = READ_REG(REG_STATUS_OFFSET);
+//         if (status == 0 || status == 3) {  // Idle or stopped
+//             break;
+//         }
+//         usleep(1000);  // 1ms
+//     }
+    
+//     // Clear stop flag
+//     WRITE_REG(REG_STOP_OFFSET, 0);
+// }
+
+// +++ ADD +++ //
+void stop_mining(void) {
     if (!miner_regs) return;
-    
-    printf("Stopping mining...\n");
-    WRITE_REG(REG_STOP_OFFSET, 1);
-    
-    // Wait for miner to acknowledge stop
-    int timeout_counter = 1000;  // Prevent infinite wait
-    while (timeout_counter-- > 0) {
-        uint32_t status = READ_REG(REG_STATUS_OFFSET);
-        if (status == 0 || status == 3) {  // Idle or stopped
-            break;
-        }
-        usleep(1000);  // 1ms
+
+    uint32_t ctrl = READ_REG(REG_CTRL_OFFSET);
+    if (ctrl & CTRL_AUTO_RESTART) {
+        WRITE_REG(REG_CTRL_OFFSET, ctrl & ~CTRL_AUTO_RESTART);
     }
-    
-    // Clear stop flag
+
+    WRITE_REG(REG_STOP_OFFSET, 1);
+
+    for (int i = 0; i < 1000; ++i) {
+        uint32_t s = READ_REG(REG_STATUS_OFFSET);
+        if (s == 0 || s == 3) break;
+        usleep(1000);
+    }
+
     WRITE_REG(REG_STOP_OFFSET, 0);
 }
+// --- ADD ---//
 
 uint32_t check_mining_result() {
     if (!miner_regs) return 0;
