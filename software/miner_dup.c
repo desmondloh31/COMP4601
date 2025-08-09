@@ -204,33 +204,53 @@ int main() {
     printf("=== SHA-3 Cryptocurrency Miner ===\n");
     printf("Timeout: %d seconds\n", MINING_TIMEOUT_SECONDS);
     
-    // Try UIO first, then /dev/mem
-    fd = open("/dev/uio0", O_RDWR);
-    if (fd >= 0) {
-        printf("Using UIO driver\n");
-        miner_regs = mmap(NULL, MINER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-        if (miner_regs == MAP_FAILED) {
-            printf("UIO mmap failed, trying /dev/mem\n");
-            close(fd);
-            fd = -1;
-        }
-    }
+    // // Try UIO first, then /dev/mem
+    // fd = open("/dev/uio0", O_RDWR);
+    // if (fd >= 0) {
+    //     printf("Using UIO driver\n");
+    //     miner_regs = mmap(NULL, MINER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    //     if (miner_regs == MAP_FAILED) {
+    //         printf("UIO mmap failed, trying /dev/mem\n");
+    //         close(fd);
+    //         fd = -1;
+    //     }
+    // }
     
-    if (fd < 0) {
-        printf("Trying /dev/mem (requires root)\n");
-        fd = open("/dev/mem", O_RDWR | O_SYNC);
-        if (fd < 0) {
-            perror("Failed to open /dev/mem");
-            return 1;
-        }
+    // if (fd < 0) {
+    //     printf("Trying /dev/mem (requires root)\n");
+    //     fd = open("/dev/mem", O_RDWR | O_SYNC);
+    //     if (fd < 0) {
+    //         perror("Failed to open /dev/mem");
+    //         return 1;
+    //     }
         
-        miner_regs = mmap(NULL, MINER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, MINER_PHYS_ADDR);
-        if (miner_regs == MAP_FAILED) {
-            perror("Failed to mmap /dev/mem");
-            close(fd);
-            return 1;
-        }
+    //     miner_regs = mmap(NULL, MINER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, MINER_PHYS_ADDR);
+    //     if (miner_regs == MAP_FAILED) {
+    //         perror("Failed to mmap /dev/mem");
+    //         close(fd);
+    //         return 1;
+    //     }
+    // }
+
+
+    // +++ ADD +++ //
+    fd = -1;
+    fd = open("/dev/mem", O_RDWR | O_SYNC);
+    if (fd < 0) { 
+        perror("open /dev/mem"); 
+        return 1; 
     }
+
+    miner_regs = mmap(NULL, MINER_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED,
+                    fd, MINER_PHYS_ADDR);
+    if (miner_regs == MAP_FAILED) { 
+        perror("mmap /dev/mem"); 
+        close(fd); 
+        return 1; 
+    }
+
+    printf("Mapped miner @ phys 0x%08X, virt %p\n", MINER_PHYS_ADDR, (void*)miner_regs);
+    // --- ADD --- //
     
     printf("Successfully mapped miner registers\n");
     
