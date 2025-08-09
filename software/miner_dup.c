@@ -39,6 +39,7 @@ int init_miner_interface() {
     int fd;
     
     // Try UIO first (preferred method)
+    /*
     fd = open("/dev/uio0", O_RDWR);
     if (fd >= 0) {
         printf("Using UIO driver\n");
@@ -50,12 +51,11 @@ int init_miner_interface() {
         }
         return fd;
     }
+    */
     
-    // Fallback to /dev/mem (requires root privileges)
-    printf("UIO not available, trying /dev/mem (requires root)\n");
     fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd < 0) {
-        perror("Failed to open /dev/mem - are you running as root?");
+        perror("Failed to open /dev/mem");
         return -1;
     }
     
@@ -97,7 +97,7 @@ void start_mining(uint32_t initial_nonce, uint32_t target) {
     usleep(1000);  // 1ms delay to ensure stop is processed
     WRITE_REG(REG_STOP_OFFSET, 0);
 
-    // +++ ADD +++ //
+    WRITE_REG(REG_START_OFFSET, 1);
     WRITE_REG(REG_NONCE_OFFSET,  initial_nonce);
     WRITE_REG(REG_TARGET_OFFSET, target);
 
@@ -105,37 +105,9 @@ void start_mining(uint32_t initial_nonce, uint32_t target) {
     WRITE_REG(0x0C, 0x1);
 
     WRITE_REG(REG_CTRL_OFFSET, CTRL_AP_START | CTRL_AUTO_RESTART);
-
-    WRITE_REG(REG_START_OFFSET, 1);
-    // --- ADD --- //
-    
-    // // Set parameters and start
-    // WRITE_REG(REG_NONCE_OFFSET, initial_nonce);
-    // WRITE_REG(REG_TARGET_OFFSET, target);
-    // WRITE_REG(REG_START_OFFSET, 1);
 }
 
-// void stop_mining() {
-//     if (!miner_regs) return;
-    
-//     printf("Stopping mining...\n");
-//     WRITE_REG(REG_STOP_OFFSET, 1);
-    
-//     // Wait for miner to acknowledge stop
-//     int timeout_counter = 1000;  // Prevent infinite wait
-//     while (timeout_counter-- > 0) {
-//         uint32_t status = READ_REG(REG_STATUS_OFFSET);
-//         if (status == 0 || status == 3) {  // Idle or stopped
-//             break;
-//         }
-//         usleep(1000);  // 1ms
-//     }
-    
-//     // Clear stop flag
-//     WRITE_REG(REG_STOP_OFFSET, 0);
-// }
 
-// +++ ADD +++ //
 void stop_mining(void) {
     if (!miner_regs) return;
 
@@ -154,7 +126,7 @@ void stop_mining(void) {
 
     WRITE_REG(REG_STOP_OFFSET, 0);
 }
-// --- ADD ---//
+
 
 uint32_t check_mining_result() {
     if (!miner_regs) return 0;
@@ -198,42 +170,14 @@ void print_mining_status() {
 int main() {
     struct timespec start_time, current_time;
     uint32_t initial_nonce = 1;
-    uint32_t target = 1000000005;  // 1e9 + 5
+    uint32_t target = 8005;  // 1e9 + 5
     int fd;
     
     printf("=== SHA-3 Cryptocurrency Miner ===\n");
     printf("Timeout: %d seconds\n", MINING_TIMEOUT_SECONDS);
     
-    // // Try UIO first, then /dev/mem
-    // fd = open("/dev/uio0", O_RDWR);
-    // if (fd >= 0) {
-    //     printf("Using UIO driver\n");
-    //     miner_regs = mmap(NULL, MINER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    //     if (miner_regs == MAP_FAILED) {
-    //         printf("UIO mmap failed, trying /dev/mem\n");
-    //         close(fd);
-    //         fd = -1;
-    //     }
-    // }
-    
-    // if (fd < 0) {
-    //     printf("Trying /dev/mem (requires root)\n");
-    //     fd = open("/dev/mem", O_RDWR | O_SYNC);
-    //     if (fd < 0) {
-    //         perror("Failed to open /dev/mem");
-    //         return 1;
-    //     }
-        
-    //     miner_regs = mmap(NULL, MINER_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, MINER_PHYS_ADDR);
-    //     if (miner_regs == MAP_FAILED) {
-    //         perror("Failed to mmap /dev/mem");
-    //         close(fd);
-    //         return 1;
-    //     }
-    // }
+    // REMOVE /dev/uioX call, DTBO is not needed
 
-
-    // +++ ADD +++ //
     fd = -1;
     fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd < 0) { 
@@ -250,7 +194,6 @@ int main() {
     }
 
     printf("Mapped miner @ phys 0x%08X, virt %p\n", MINER_PHYS_ADDR, (void*)miner_regs);
-    // --- ADD --- //
     
     printf("Successfully mapped miner registers\n");
     
