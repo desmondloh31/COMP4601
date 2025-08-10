@@ -6,3 +6,5 @@ client.set_workspace(path="tiny_sha3")
 
 vitis.dispose()
 
+vitis.dispose()
+

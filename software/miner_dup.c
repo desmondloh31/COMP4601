@@ -194,7 +194,6 @@ int main() {
     }
 
     printf("Mapped miner @ phys 0x%08X, virt %p\n", MINER_PHYS_ADDR, (void*)miner_regs);
-    
     printf("Successfully mapped miner registers\n");
     
     // Record start time
